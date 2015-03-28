@@ -10,14 +10,22 @@
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
-[Rr]elease/
 [Rr]eleases/
 x64/
 x86/
 build/
 bld/
-[Bb]in/
 [Oo]bj/
+
+# 调试程序生成的文件(Release目录下)
+AMCL.ini
+AMCL.vshost.exe
+AMCL.exe.config
+AMCL.vshost.exe.config
+AMCL.vshost.exe.manifest
+saves/
+asm/
+logs/
 
 # Roslyn cache directories
 *.ide/
