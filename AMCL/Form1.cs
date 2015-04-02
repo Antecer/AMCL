@@ -25,8 +25,8 @@ namespace AMCL
         }
 
         #region 字段
-        String UpdateVer = @"https://raw.githubusercontent.com/Antecer/AMCL/master/AMCL/Properties/AssemblyInfo.cs";//AMCL最新版本号（判定是否需要更新）
-        String UpdateExe = @"https://raw.githubusercontent.com/Antecer/AMCL/master/AMCL/bin/Release/AMCL.exe";      //AMCL更新地址
+        String UpdateVer = @"http://git.oschina.net/Antecer/AMCL/raw/master/AMCL/Properties/AssemblyInfo.cs";//AMCL最新版本号（判定是否需要更新）
+        String UpdateExe = @"http://git.oschina.net/Antecer/AMCL/raw/master/AMCL/bin/Release/AMCL.exe";      //AMCL更新地址
 
         String VerURL = @"http://s3.amazonaws.com/Minecraft.Download/versions/";    //官方游戏下载地址（Ver.jar&Ver.json）
         String VerURLb = @"http://bmclapi.bangbang93.com/versions/";                //BMCL游戏下载地址
@@ -1608,7 +1608,7 @@ namespace AMCL
         private void ModClientUpdate()
         {
             ModUpdateLine();
-            Thread.Sleep(2000);
+            Thread.Sleep(1000);
             CloseUpdateInfo();
         }
         private void ModUpdateLine()
