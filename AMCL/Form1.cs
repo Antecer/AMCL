@@ -1514,25 +1514,25 @@ namespace AMCL
             String UpdateFile = GameFile.Text + @"\versions\" + SelectVer + @"\update.json";
             if (File.Exists(UpdateList))
             {
-                var JSON = new JavaScriptSerializer().Deserialize<dynamic>(File.ReadAllText(UpdateList));
+                var JSON = new JavaScriptSerializer().Deserialize<dynamic>(File.ReadAllText(UpdateList, Encoding.Default));
                 if (JSON.ContainsKey("updatelist"))
                 {
                     if (File.Exists(UpdateFile))
                     {
                         String UpdateURL = File.ReadAllText(UpdateFile, Encoding.Default);
-                        if (!UpdateURL.EndsWith("√")) File.WriteAllText(UpdateFile, JSON["updatelist"]);
-                        else File.WriteAllText(UpdateFile, JSON["updatelist"] + "√");
+                        if (UpdateURL.IndexOf("√")>-1) File.WriteAllText(UpdateFile, JSON["updatelist"] + "√", Encoding.Default);
+                        else File.WriteAllText(UpdateFile, JSON["updatelist"],Encoding.Default);
                     }
                     else
                     {
-                        File.WriteAllText(UpdateFile, JSON["updatelist"] + "√");
+                        File.WriteAllText(UpdateFile, JSON["updatelist"] + "√",Encoding.Default);
                     }
                 }
             }
             if (File.Exists(UpdateFile))
             {
-                String UpdateURL = File.ReadAllText(UpdateFile);
-                if (UpdateURL.EndsWith("√"))
+                String UpdateURL = File.ReadAllText(UpdateFile,Encoding.Default);
+                if (UpdateURL.IndexOf("√")>-1)
                 {
                     UpdateAuto.Checked = true;
                     UpdateURL = UpdateURL.Replace("√", "");
@@ -1621,14 +1621,13 @@ namespace AMCL
         {
             String UpdateURL = UpdateJsonURL.Text;
             String Text = GetHttpPage(UpdateURL);
-
             InfoAdd(false, "正在检查更新当前整合包\n", Color.ForestGreen);
             if (!(Text.StartsWith("{") && Text.EndsWith("}")))
             {
                 InfoAdd(false, "当前整合包暂无更新\n", Color.ForestGreen);
                 return;
             }
-            File.WriteAllText(GameDir + @"\versions\" + "updatelist.json", Text, Encoding.Default);//保存updatelist.json文件
+
             var JSON = new JavaScriptSerializer().Deserialize<dynamic>(Text);//将JSON反序列化为属性集合
             try
             {
@@ -1636,6 +1635,7 @@ namespace AMCL
                 {
                     String VersionDir = GameDir + @"\versions\" + JSON["name"];
                     if (!Directory.Exists(VersionDir)) Directory.CreateDirectory(VersionDir);
+                    File.WriteAllText(VersionDir + "\\updatelist.json", Text, Encoding.Default);//保存updatelist.json文件
                 }
                 else
                 {
