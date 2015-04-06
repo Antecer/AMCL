@@ -105,9 +105,9 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="FTPClient.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WebFileLoader.cs" />
     <Compile Include="Zip\Checksums\Adler32.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -283,7 +283,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\Icon.ico" />
-    <None Include="Resources\Image2.jpg" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

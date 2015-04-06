@@ -1090,7 +1090,7 @@ namespace AMCL
             return true;
         }
         /// <summary>
-        /// 下载缺失库文件
+        /// 下载文件并创建指定Path的所有目录和子目录
         /// </summary>
         /// <param name="strURL">要下载的文件的地址</param>
         /// <param name="strFileName">保存到本地的路径（包含文件名）</param>
@@ -1109,47 +1109,37 @@ namespace AMCL
         /// <param name="downLoadUrl">文件的url路径</param>
         /// <param name="saveFullName">需要保存在本地的路径(包含文件名)</param>
         /// <returns>成功返回true，失败返回false</returns>
-        public bool DownloadFile(string downLoadUrl, string saveFullName)
+        public bool DownloadFile(string downLoadUrl, string savePathName)
         {
-            bool flagDown = false;
-            HttpWebRequest httpWebRequest = null;
+            HttpWebRequest request = null;
             try
-            {   
-                httpWebRequest = (HttpWebRequest)HttpWebRequest.Create(downLoadUrl);//根据URL获取远程文件流
-                httpWebRequest.UserAgent = "AMCL";
-                HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-                long totalBytes = httpWebResponse.ContentLength;
-                Stream sr = httpWebResponse.GetResponseStream();
-                Stream sw = new FileStream(saveFullName, FileMode.Create);//创建本地文件写入流
+            {
+                request = (HttpWebRequest)HttpWebRequest.Create(downLoadUrl);//根据URL获取远程文件流
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                Stream sr = response.GetResponseStream();
+                Stream sw = new FileStream(savePathName, FileMode.Create);//创建本地文件写入流
 
-                long totalDownloadedByte = 0;
-                byte[] by = new byte[1024];
-                int osize = sr.Read(by, 0, (int)by.Length);
-                string downVal = " [0.0%]";
-                int downLen = downVal.Length - 2;
-                InfoAddx(0, 0, downVal, Color.DarkSlateGray);
+                Decimal WebFileBytes = response.ContentLength;
+                Decimal DownloadByte = 0;
+                Byte[] buf = new Byte[1024];//创建数据接收缓冲区
+                Int32 osize = sr.Read(buf, 0, (int)buf.Length);
                 while (osize > 0)
                 {
-                    totalDownloadedByte = osize + totalDownloadedByte;
-                    sw.Write(by, 0, osize);
-                    double percent = Convert.ToDouble(totalDownloadedByte) / Convert.ToDouble(totalBytes);
-                    downVal = percent.ToString("0.0%");
-                    InfoAddx(0 - downLen, downLen - 1, downVal, Color.DarkSlateGray);
-                    downLen = downVal.Length + 1;
-                    osize = sr.Read(by, 0, (int)by.Length);
+                    DownloadByte += osize;
+                    sw.Write(buf, 0, osize);
+                    osize = sr.Read(buf, 0, (int)buf.Length);
                 }
-                InfoAddx(0 - downLen - 2, downLen + 2, " ", Color.DarkSlateGray);
-                Thread.Sleep(100);
-                flagDown = true;
                 sw.Close();
                 sr.Close();
+                return true;
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                if (httpWebRequest != null) httpWebRequest.Abort();
+                if (request != null) request.Abort();
+                return false;
             }
-            return flagDown;
         }
+
         /// <summary>
         /// 文件MD5校验
         /// </summary>
@@ -1433,7 +1423,6 @@ namespace AMCL
             }
             string SelectDown = GameFile.Text + @"\versions\" + SelectVer + @"\";
             Directory.CreateDirectory(SelectDown);
-
             if (DownProgressFile(VerURL + SelectVer + @"\" + SelectVer + ".json", SelectDown + SelectVer + ".json", VerGridView.Rows[RowNum].Cells[3]))//下载成功
             {
                 VerGridView.Rows[RowNum].Cells[3].Value = "JSON下载完成！";
@@ -1521,12 +1510,29 @@ namespace AMCL
         /// <param name="UpdateFile">选定的游戏名称</param>
         private void ReadUpdateFile(String SelectVer)
         {
+            String UpdateList = GameFile.Text + @"\versions\" + SelectVer + @"\updatelist.json";
             String UpdateFile = GameFile.Text + @"\versions\" + SelectVer + @"\update.json";
+            if (File.Exists(UpdateList))
+            {
+                var JSON = new JavaScriptSerializer().Deserialize<dynamic>(File.ReadAllText(UpdateList));
+                if (JSON.ContainsKey("updatelist"))
+                {
+                    if (File.Exists(UpdateFile))
+                    {
+                        String UpdateURL = File.ReadAllText(UpdateFile, Encoding.Default);
+                        if (!UpdateURL.EndsWith("√")) File.WriteAllText(UpdateFile, JSON["updatelist"]);
+                        else File.WriteAllText(UpdateFile, JSON["updatelist"] + "√");
+                    }
+                    else
+                    {
+                        File.WriteAllText(UpdateFile, JSON["updatelist"] + "√");
+                    }
+                }
+            }
             if (File.Exists(UpdateFile))
             {
-                String UpdateURL = File.ReadAllText(UpdateFile, Encoding.Default);
-                UpdateURL = UpdateURL.Trim();
-                if (UpdateURL.IndexOf("√") > -1)
+                String UpdateURL = File.ReadAllText(UpdateFile);
+                if (UpdateURL.EndsWith("√"))
                 {
                     UpdateAuto.Checked = true;
                     UpdateURL = UpdateURL.Replace("√", "");
@@ -1614,137 +1620,128 @@ namespace AMCL
         private void ModUpdateLine()
         {
             String UpdateURL = UpdateJsonURL.Text;
-            String Text = GetHttpPage(UpdateURL).Trim();
+            String Text = GetHttpPage(UpdateURL);
+
             InfoAdd(false, "正在检查更新当前整合包\n", Color.ForestGreen);
             if (!(Text.StartsWith("{") && Text.EndsWith("}")))
             {
                 InfoAdd(false, "当前整合包暂无更新\n", Color.ForestGreen);
                 return;
             }
+            File.WriteAllText(GameDir + @"\versions\" + "updatelist.json", Text, Encoding.Default);//保存updatelist.json文件
             var JSON = new JavaScriptSerializer().Deserialize<dynamic>(Text);//将JSON反序列化为属性集合
-
-            if (JSON.ContainsKey("name"))   //判断指定的游戏目录是否存在
+            try
             {
-                String VersionDir = GameDir + @"\versions\" + JSON["name"];
-                if (!Directory.Exists(VersionDir)) Directory.CreateDirectory(VersionDir);
-            }
-            else
-            {
-                InfoAdd(false, "指定的整合包更新链接不正确\n", Color.OrangeRed);
-                return;
-            }
-            if (JSON.ContainsKey("jar"))
-            {
-                bool sign = false;
-                String VerFile = GameDir + @"\versions\" + JSON["name"] + @"\" + JSON["name"] + ".jar";
-                if (File.Exists(VerFile))
+                if (JSON.ContainsKey("name"))   //判断指定的游戏目录是否存在
                 {
-                    decimal UpdateSize = 0;
-                    decimal ClientSize = new FileInfo(VerFile).Length;
-                    for (int i = 0; i < 3; i++)//多次判断minecraft.jar文件长度是否正确
+                    String VersionDir = GameDir + @"\versions\" + JSON["name"];
+                    if (!Directory.Exists(VersionDir)) Directory.CreateDirectory(VersionDir);
+                }
+                else
+                {
+                    InfoAdd(false, "指定的整合包更新链接不正确\n", Color.OrangeRed);
+                    return;
+                }
+
+                if (JSON.ContainsKey("game"))
+                {
+                    foreach (var game in JSON["game"])
                     {
-                        UpdateSize = GetHttpLength(JSON["jar"]);
-                        if (UpdateSize > 0) break;
+                        String filePath = GameDir + @"\versions\" + JSON["name"] + @"\" + game["name"];
+                        String fileHash = game["hash"];
+                        if (File.Exists(filePath))
+                        {
+                            if (fileHash == GetMd5Hash(filePath)) continue;
+                            MessageBox.Show(GetMd5Hash(filePath));
+                            File.Delete(filePath);
+                        }
+                        InfoAdd(true, "正在更新" + game["name"], Color.Black);
+                        if (CheckDownLoad(game["url"], filePath)) InfoAdd(false, "√\n", Color.Green);
+                        else InfoAdd(false, "×\n", Color.Red);
                     }
-                    if (UpdateSize == 0) InfoAdd(true, "获取" + JSON["jar"] + "失败\n", Color.Red);
-                    else if (UpdateSize != ClientSize) sign = true;
                 }
-                if (sign) 
+
+                if (JSON.ContainsKey("mods"))
                 {
-                    File.Delete(VerFile);
-                    InfoAdd(true, "正在更新" + JSON["name"] + ".jar", Color.Black);
-                    if (DownloadFile(JSON["jar"], VerFile))InfoAdd(false, "√\n", Color.Green);
-                    else InfoAdd(false, "×\n", Color.Red);
-                }
-            }
-            if (JSON.ContainsKey("json"))
-            {
-                bool sign = false;
-                String VerFile = GameDir + @"\versions\" + JSON["name"] + @"\" + JSON["name"] + ".json";
-                if (File.Exists(VerFile))
-                {
-                    decimal UpdateSize = 0;
-                    decimal ClientSize = new FileInfo(VerFile).Length;
-                    for (int i = 0; i < 3; i++)//多次判断minecraft.json文件长度是否正确
+                    ArrayList DList = new ArrayList();
+                    foreach (var mod in JSON["mods"])
                     {
-                        UpdateSize = GetHttpLength(JSON["json"]);
-                        if (UpdateSize > 0) break;
+                        DList.Add(mod["name"]);
+                        String modPath = GameDir + @"\versions\" + JSON["name"] + @"\mods\" + mod["name"];
+                        String modHash = mod["hash"];
+                        if (File.Exists(modPath))
+                        {
+                            if (modHash == GetMd5Hash(modPath)) continue;
+                            File.Delete(modPath);
+                        }
+                        InfoAdd(true, "正在更新" + mod["name"], Color.Black);
+                        if (CheckDownLoad(mod["url"], modPath)) InfoAdd(false, "√\n", Color.Green);
+                        else InfoAdd(false, "×\n", Color.Red);
                     }
-                    if (UpdateSize == 0) InfoAdd(true, "获取" + JSON["json"] + "失败\n", Color.Red);
-                    else if (UpdateSize != ClientSize) sign = true;
-                }
-                if (sign)
-                {
-                    File.Delete(VerFile);
-                    InfoAdd(true, "正在更新" + JSON["name"] + ".json", Color.Black);
-                    if (DownloadFile(JSON["json"], VerFile)) InfoAdd(false, "√\n", Color.Green);
-                    else InfoAdd(false, "×\n", Color.Red);
-                }
-            }
-            if (JSON.ContainsKey("mods"))
-            {
-                String VersionDir = GameDir + @"\versions\" + JSON["name"] + @"\mods";
-                if (!Directory.Exists(VersionDir)) Directory.CreateDirectory(VersionDir);
-            }
-            else
-            {
-                InfoAdd(false, "当前整合包更新完成\n", Color.ForestGreen);
-                return;
-            }
 
-            ArrayList DList = new ArrayList();
-            foreach (var mod in JSON["mods"])
-            {
-                String modname = mod["name"];
-                DList.Add(modname);
-                String VerFile = GameDir + @"\versions\" + JSON["name"] + @"\mods\" + modname;
-                if (File.Exists(VerFile))
-                {
-                    decimal UpdateSize = GetHttpLength(mod["url"]);
-                    decimal ClientSize = new FileInfo(VerFile).Length;
-                    if ((UpdateSize == ClientSize) || (UpdateSize == 0)) continue;
-                    else File.Delete(VerFile);
+                    String modsPath = GameDir + @"\versions\" + JSON["name"] + @"\mods\";
+                    DirectoryInfo modsInfo = new DirectoryInfo(modsPath);
+                    FileInfo[] modslist = modsInfo.GetFiles();
+                    for (int i = 0; i < modslist.Length; i++)   //遍历本地mods，删除旧文件
+                    {
+                        if (modslist[i].ToString().IndexOf("$") > -1) continue;     //例外的删除文件（白名单）
+                        if (DList.Contains(modslist[i].ToString())) continue;
+                        File.Delete(modsPath + modslist[i]);
+                    }
                 }
-                InfoAdd(true, "正在更新" + modname, Color.Black);
-                if (DownloadFile(mod["url"], VerFile)) InfoAdd(false, "√\n", Color.Green);
-                else InfoAdd(false, "×\n", Color.Red);
             }
-
-
-            String modsfile = GameDir + @"\versions\" + JSON["name"] + @"\mods\";
-            DirectoryInfo modsInfo = new DirectoryInfo(modsfile);
-            FileInfo[] modslist = modsInfo.GetFiles();
-            for (int i = 0; i < modslist.Length; i++)   //遍历本地mods，删除旧文件
+            catch(Exception e)
             {
-                if (modslist[i].ToString().IndexOf("$") > -1) continue;     //例外的删除文件（白名单）
-                if (DList.Contains(modslist[i].ToString())) continue;
-                File.Delete(modsfile + modslist[i]);
+                MessageBox.Show(e.Message);
             }
             InfoAdd(false, "当前整合包更新完成\n", Color.ForestGreen);
         }
+        
         /// <summary>
-        /// 获取指定网页内容
+        /// 获取网页内容
         /// </summary>
-        /// <param name="url"></param>
-        /// <returns></returns>
-        private string GetHttpPage(string url)
+        /// <param name="WebUrl">网页URL</param>
+        /// <returns>网页内容&错误信息</returns>
+        public static String GetHttpPage(String WebUrl)
         {
-            string HttpPage = "";
             try
             {
-                WebRequest request = WebRequest.Create(url);
-                WebResponse response = request.GetResponse();
-                StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.GetEncoding("gb2312"));
-                HttpPage = reader.ReadToEnd();
-                reader.Close();
-                reader.Dispose();
-                response.Close();
+                WebClient WebGet = new WebClient();
+                byte[] Webdat = WebGet.DownloadData(WebUrl);
+                String Text = null;
+                if (!isErrorEncoded(Encoding.UTF8.GetString(Webdat)))
+                {
+                    Text = Encoding.UTF8.GetString(Webdat);
+                }
+                else
+                {
+                    Text = Encoding.Default.GetString(Webdat);
+                }
+
+                return Text;
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Console.WriteLine(ex.Message);
+                return "[Error]" + e.Message;
             }
-            return HttpPage;
+        }
+        /// <summary>
+        /// 判断指定字符串是否乱码
+        /// </summary>
+        /// <param name="txt">字符串数据</param>
+        /// <returns>true&false</returns>
+        public static bool isErrorEncoded(string txt)
+        {
+            var bytes = Encoding.UTF8.GetBytes(txt);
+            for (var i = 0; i < bytes.Length; i++)//239 191 189
+            {
+                if (i < bytes.Length - 3)
+                    if (bytes[i] == 239 && bytes[i + 1] == 191 && bytes[i + 2] == 189)
+                    {
+                        return true;
+                    }
+            }
+            return false;
         }
 
         /// <summary>
