@@ -1133,7 +1133,7 @@ namespace AMCL
                 sr.Close();
                 return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 if (request != null) request.Abort();
                 return false;
@@ -1656,7 +1656,15 @@ namespace AMCL
                             File.Delete(filePath);
                         }
                         InfoAdd(true, "正在更新" + game["name"], Color.Black);
-                        if (CheckDownLoad(game["url"], filePath)) InfoAdd(false, "√\n", Color.Green);
+                        if (CheckDownLoad(game["url"], filePath))
+                        {
+                            if (fileHash == GetMd5Hash(filePath)) InfoAdd(false, "√\n", Color.Green);
+                            else
+                            {
+                                InfoAdd(false, "×\n", Color.Red);
+                                File.Delete(filePath);
+                            }
+                        }
                         else InfoAdd(false, "×\n", Color.Red);
                     }
                 }
@@ -1675,7 +1683,15 @@ namespace AMCL
                             File.Delete(modPath);
                         }
                         InfoAdd(true, "正在更新" + mod["name"], Color.Black);
-                        if (CheckDownLoad(mod["url"], modPath)) InfoAdd(false, "√\n", Color.Green);
+                        if (CheckDownLoad(mod["url"], modPath))
+                        {
+                            if (modHash == GetMd5Hash(modPath)) InfoAdd(false, "√\n", Color.Green);
+                            else
+                            {
+                                InfoAdd(false, "×\n", Color.Red);
+                                File.Delete(modPath);
+                            }
+                        }
                         else InfoAdd(false, "×\n", Color.Red);
                     }
 
