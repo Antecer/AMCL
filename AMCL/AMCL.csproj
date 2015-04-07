@@ -72,7 +72,8 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>AMCL.Program</StartupObject>
+    <StartupObject>
+    </StartupObject>
   </PropertyGroup>
   <PropertyGroup>
     <SignManifests>false</SignManifests>

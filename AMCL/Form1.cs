@@ -538,15 +538,14 @@ namespace AMCL
             {
                 WebRequest request = WebRequest.Create(url);
                 WebResponse response = request.GetResponse();
-                StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.GetEncoding("gb2312"));
+                StreamReader reader = new StreamReader(response.GetResponseStream(), true);
                 vertext = reader.ReadToEnd();
-                reader.Close();
                 reader.Dispose();
                 response.Close();
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                MessageBox.Show(ex.Message);
             }
             if (vertext.Contains("AssemblyFileVersion"))
             {
@@ -996,7 +995,7 @@ namespace AMCL
             String Text;
             String AssetHash;
             String AssetSize;
-            StreamReader SR = new StreamReader(JsonPath);       //把Json文档载入数据流
+            StreamReader SR = new StreamReader(JsonPath,true);       //把Json文档载入数据流
             while ((Text = SR.ReadLine()) != null)              //获取一行JSON文件内容
             {
                 Text = Text.Replace("\"", "").Replace(":", "").Replace(" ", "");//处理字符串
@@ -1514,24 +1513,30 @@ namespace AMCL
             String UpdateFile = GameFile.Text + @"\versions\" + SelectVer + @"\update.json";
             if (File.Exists(UpdateList))
             {
-                var JSON = new JavaScriptSerializer().Deserialize<dynamic>(File.ReadAllText(UpdateList, Encoding.Default));
+                StreamReader SR = new StreamReader(UpdateList, true);
+                var JSON = new JavaScriptSerializer().Deserialize<dynamic>(SR.ReadToEnd());
+                SR.Close();
                 if (JSON.ContainsKey("updatelist"))
                 {
                     if (File.Exists(UpdateFile))
                     {
-                        String UpdateURL = File.ReadAllText(UpdateFile, Encoding.Default);
-                        if (UpdateURL.IndexOf("√")>-1) File.WriteAllText(UpdateFile, JSON["updatelist"] + "√", Encoding.Default);
-                        else File.WriteAllText(UpdateFile, JSON["updatelist"],Encoding.Default);
+                        StreamReader SRf = new StreamReader(UpdateFile, true);
+                        String UpdateURL = SRf.ReadToEnd();
+                        SRf.Close();
+                        if (UpdateURL.IndexOf("√")>-1) File.WriteAllText(UpdateFile, JSON["updatelist"] + "√");
+                        else File.WriteAllText(UpdateFile, JSON["updatelist"]);
                     }
                     else
                     {
-                        File.WriteAllText(UpdateFile, JSON["updatelist"] + "√",Encoding.Default);
+                        File.WriteAllText(UpdateFile, JSON["updatelist"] + "√");
                     }
                 }
             }
             if (File.Exists(UpdateFile))
             {
-                String UpdateURL = File.ReadAllText(UpdateFile,Encoding.Default);
+                StreamReader SR = new StreamReader(UpdateFile, true);
+                String UpdateURL = SR.ReadToEnd();
+                SR.Close();
                 if (UpdateURL.IndexOf("√")>-1)
                 {
                     UpdateAuto.Checked = true;
@@ -1572,7 +1577,7 @@ namespace AMCL
                 {
                     UpdateURL = UpdateURL + "√";
                 }
-                File.WriteAllText(UpdateFile, UpdateURL, Encoding.Default);
+                File.WriteAllText(UpdateFile, UpdateURL);
             }
         }
         /// <summary>
@@ -1635,7 +1640,7 @@ namespace AMCL
                 {
                     String VersionDir = GameDir + @"\versions\" + JSON["name"];
                     if (!Directory.Exists(VersionDir)) Directory.CreateDirectory(VersionDir);
-                    File.WriteAllText(VersionDir + "\\updatelist.json", Text, Encoding.Default);//保存updatelist.json文件
+                    File.WriteAllText(VersionDir + "\\updatelist.json", Text);//保存updatelist.json文件
                 }
                 else
                 {
@@ -1652,7 +1657,6 @@ namespace AMCL
                         if (File.Exists(filePath))
                         {
                             if (fileHash == GetMd5Hash(filePath)) continue;
-                            MessageBox.Show(GetMd5Hash(filePath));
                             File.Delete(filePath);
                         }
                         InfoAdd(true, "正在更新" + game["name"], Color.Black);
@@ -1722,42 +1726,18 @@ namespace AMCL
         {
             try
             {
-                WebClient WebGet = new WebClient();
-                byte[] Webdat = WebGet.DownloadData(WebUrl);
-                String Text = null;
-                if (!isErrorEncoded(Encoding.UTF8.GetString(Webdat)))
-                {
-                    Text = Encoding.UTF8.GetString(Webdat);
-                }
-                else
-                {
-                    Text = Encoding.Default.GetString(Webdat);
-                }
-
-                return Text;
+                WebRequest request = WebRequest.Create(WebUrl);
+                WebResponse response = request.GetResponse();
+                StreamReader SR = new StreamReader(response.GetResponseStream(), true);
+                String text = SR.ReadToEnd();
+                SR.Close();
+                response.Close();
+                return text;
             }
             catch (Exception e)
             {
                 return "[Error]" + e.Message;
             }
-        }
-        /// <summary>
-        /// 判断指定字符串是否乱码
-        /// </summary>
-        /// <param name="txt">字符串数据</param>
-        /// <returns>true&false</returns>
-        public static bool isErrorEncoded(string txt)
-        {
-            var bytes = Encoding.UTF8.GetBytes(txt);
-            for (var i = 0; i < bytes.Length; i++)//239 191 189
-            {
-                if (i < bytes.Length - 3)
-                    if (bytes[i] == 239 && bytes[i + 1] == 191 && bytes[i + 2] == 189)
-                    {
-                        return true;
-                    }
-            }
-            return false;
         }
 
         /// <summary>
