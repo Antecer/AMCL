@@ -758,7 +758,9 @@ namespace AMCL
             string VerFile = GameFile.Text + @"\versions";//获取版本文件夹路径
             string VerNameFile = VerFile + @"\" + GameList.SelectedItem.ToString();//获取版本名称路径
             //修改Json中游戏ID名称
-            string ReJson = File.ReadAllText(VerNameFile + @"\" + GameList.SelectedItem.ToString() + ".json");
+            StreamReader SR = new StreamReader(VerNameFile + @"\" + GameList.SelectedItem.ToString() + ".json", true);
+            String ReJson = SR.ReadToEnd();
+            SR.Dispose();
             ReJson = ReJson.Replace("\"id\": \"" + GameList.SelectedItem.ToString(), "\"id\": \"" + ReNameBox.Text);
             File.WriteAllText(VerNameFile + @"\" + GameList.SelectedItem.ToString() + ".json", ReJson);
             //重命名游戏版本json的名称
