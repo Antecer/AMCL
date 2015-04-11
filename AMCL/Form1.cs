@@ -112,7 +112,11 @@ namespace AMCL
             this.InfoBox.SelectionColor = Color.Black;
             InfoBox.AppendText(result + "\n");
             this.InfoBox.ScrollToCaret();   //使RichBox滚动条拖动到当前插入符号位置
-            if (result.IndexOf("Starting up SoundSystem") > -1) HiddenWindow();//隐藏启动器窗口
+            if (result.IndexOf("Starting up SoundSystem") > -1)
+            {
+                HiddenWindow();//隐藏启动器窗口
+                Application.Exit();//启动游戏后退出启动器，防止消息阻塞
+            }
         }
         /// <summary>
         /// 输出错误消息
