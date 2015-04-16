@@ -52,7 +52,7 @@ namespace AMCL
         private void RunOrder(string StartFileName, string StartFileArg)
         {
             DeBugMessage = null;
-            Boolean DeBugBuff = false;
+            DeBugBuff = false;
             Process CmdProcess = new Process();
             CmdProcess.StartInfo.FileName = StartFileName;      // 命令  
             CmdProcess.StartInfo.Arguments = StartFileArg;      // 参数  
