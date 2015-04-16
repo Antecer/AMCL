@@ -21,7 +21,6 @@ namespace AMCL
         public AMCL()
         {
             InitializeComponent();
-            Init(); 
         }
 
         #region 字段
@@ -43,21 +42,8 @@ namespace AMCL
         #endregion
 
         #region CMD启动程序的函数
-        // 定义委托
-        public delegate void DelReadStdOutput(string result);
-        public delegate void DelReadErrOutput(string result);
-        // 定义委托事件  
-        public event DelReadStdOutput ReadStdOutput;
-        public event DelReadErrOutput ReadErrOutput;
-
-        /// <summary>
-        /// 将相应函数注册到委托事件中
-        /// </summary>
-        private void Init()
-        {
-            ReadStdOutput += new DelReadStdOutput(ReadStdOutputAction);
-            ReadErrOutput += new DelReadErrOutput(ReadErrOutputAction);
-        }
+        String DeBugMessage = null;
+        Boolean DeBugBuff = false;
         /// <summary>
         /// CMD程序执行函数
         /// </summary>
@@ -65,13 +51,15 @@ namespace AMCL
         /// <param name="StartFileArg">程序执行的参数</param>
         private void RunOrder(string StartFileName, string StartFileArg)
         {
+            DeBugMessage = null;
+            Boolean DeBugBuff = false;
             Process CmdProcess = new Process();
             CmdProcess.StartInfo.FileName = StartFileName;      // 命令  
             CmdProcess.StartInfo.Arguments = StartFileArg;      // 参数  
 
             CmdProcess.StartInfo.CreateNoWindow = true;         // 不创建新窗口  
             CmdProcess.StartInfo.UseShellExecute = false;
-            CmdProcess.StartInfo.RedirectStandardInput = true;  // 重定向输入  
+            //CmdProcess.StartInfo.RedirectStandardInput = true;  // 重定向输入  
             CmdProcess.StartInfo.RedirectStandardOutput = true; // 重定向标准输出  
             CmdProcess.StartInfo.RedirectStandardError = true;  // 重定向错误输出  
             //CmdProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;  
@@ -89,45 +77,39 @@ namespace AMCL
         //异步调用，输出执行程序返回的普通消息
         private void p_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (e.Data != null)
+            if (!string.IsNullOrEmpty(e.Data))
             {
-                this.Invoke(ReadStdOutput, new object[] { e.Data });
+                if (DeBugBuff)
+                {
+                    DeBugMessage += e.Data + "\n";
+                }
+                else
+                {
+                    DeBugMessage += e.Data + "\n";
+                    InfoAdd(false, e.Data + "\n", Color.Black);
+                    if (e.Data.IndexOf("Starting up SoundSystem") > -1)
+                    {
+                        HiddenWindow();//隐藏启动器窗口
+                        DeBugBuff = true;   //启动游戏后不再将Debug数据输出到RichBox(防止richbox卡顿，暂时没别的办法)
+                    }
+                }
             }
         }
         //异步调用，输出执行程序返回的错误消息
         private void p_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (e.Data != null)
+            if (!string.IsNullOrEmpty(e.Data))
             {
-                this.Invoke(ReadErrOutput, new object[] { e.Data });
+                if(DeBugBuff)
+                {
+                    DeBugMessage += "[ERROR!]\n{\n" + e.Data + "\n}\n";
+                }
+                else
+                {
+                    DeBugMessage += "[ERROR!]\n{\n" + e.Data + "\n}\n";
+                    InfoAdd(false, "[ERROR!]\n{\n" + e.Data + "\n}\n", Color.Red);
+                }
             }
-        }
-        /// <summary>
-        /// 输出普通消息
-        /// </summary>
-        /// <param name="result">消息内容</param>
-        private void ReadStdOutputAction(string result)
-        {
-            this.InfoBox.Select(InfoBox.TextLength, 0);//移动光标到文本框结尾
-            this.InfoBox.SelectionColor = Color.Black;
-            InfoBox.AppendText(result + "\n");
-            this.InfoBox.ScrollToCaret();   //使RichBox滚动条拖动到当前插入符号位置
-            if (result.IndexOf("Starting up SoundSystem") > -1)
-            {
-                HiddenWindow();//隐藏启动器窗口
-                Application.Exit();//启动游戏后退出启动器，防止消息阻塞
-            }
-        }
-        /// <summary>
-        /// 输出错误消息
-        /// </summary>
-        /// <param name="result">错误内容</param>
-        private void ReadErrOutputAction(string result)
-        {
-            this.InfoBox.Select(InfoBox.TextLength, 0);
-            this.InfoBox.SelectionColor = Color.Red;
-            InfoBox.AppendText("[ERROR!]\n{\n" + result + "\n}\n");
-            this.InfoBox.ScrollToCaret();   //使RichBox滚动条拖动到当前插入符号位置
         }
         /// <summary>
         /// CMD执行结束后触发的事件
@@ -153,7 +135,7 @@ namespace AMCL
             else
             {
                 InfoPanel.Visible = false;
-                File.WriteAllText(Application.StartupPath + @"\logs\AMCL.log", InfoBox.Text);//保存运行日志
+                File.WriteAllText(Application.StartupPath + @"\logs\AMCL.log", DeBugMessage);//保存运行日志
                 InfoBox.Clear();
                 StartPanel.Visible = true;
             }
@@ -463,7 +445,7 @@ namespace AMCL
         {
             version.Text = version.Text + Application.ProductVersion;
             Thread Update_Start = new Thread(new ThreadStart(UpdateStart));//创建一个新线程来执行更新
-            Update_Start.IsBackground = true;   //设置此程为后台线程
+            Update_Start.IsBackground = true;   //设置此线程为后台线程
             Update_Start.Start();               //启动线程
         }
         /// <summary>
@@ -501,7 +483,6 @@ namespace AMCL
             {
                 File.Move(FileAMCL, FileAMCL + ".old");
                 File.Move(FileAMCL + ".tmp", FileAMCL);
-                Thread.Sleep(100);
                 Application.Restart();
             }
         }
@@ -607,10 +588,10 @@ namespace AMCL
             else
             {
                 if (time) this.InfoBox.AppendText(DateTime.Now.ToLongTimeString() + " ");//添加时间标签
-                this.InfoBox.Select(InfoBox.TextLength,0);//移动光标到文本末尾
-                this.InfoBox.ScrollToCaret();             //将控件的内容滚动到当前插入位置
-                this.InfoBox.SelectionColor = color;//设置文本插入点颜色
-                this.InfoBox.AppendText(text);//在InfoBox末尾处插入文本
+                this.InfoBox.Select(InfoBox.TextLength, 0); //移动光标到文本末尾
+                this.InfoBox.SelectionColor = color;        //设置文本插入点颜色
+                this.InfoBox.AppendText(text);              //在InfoBox末尾处插入文本
+                this.InfoBox.ScrollToCaret();               //将控件的内容滚动到当前插入位置
             }
         }
         private delegate void InfoEndAdd(bool time, String text, Color color);//委托
