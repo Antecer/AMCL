@@ -1752,7 +1752,14 @@ namespace AMCL
         private void TabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
             int SelectTab = TabControl.SelectedIndex;
-            if (SelectTab == 1) GetUpdateList();
+            if (SelectTab == 1)
+            {
+                GetUpdateList();
+                if (UpdateList.Items.Count > 0)
+                {
+                    UpdateList.SelectedIndex = 0;
+                }
+            }
         }
         #endregion
     }

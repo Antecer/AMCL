@@ -798,25 +798,29 @@
   </metadata>
   <data name="SampleText.Text" xml:space="preserve">
     <value>{
-  "name": "[1.7.10]工业时代",
-  "jar": "http://bmclapi.bangbang93.com/versions/1.7.10/1.7.10.jar",
-  "json": "http://bcs.duapp.com/amclupdate/versions/[1.7.10]工业时代/[1.7.10]工业时代.json",
+  "name": "PandoraCraft",
+  "updatelist": "http://git.oschina.net/Antecer/mc/raw/master/PandoraCraft/updatelist.json",
+  "servers": "http://git.oschina.net/Antecer/mc/raw/master/PandoraCraft/servers.dat",
+  "game": [
+    {
+      "name": "PandoraCraft.jar",
+      "url": "http://git.oschina.net/Antecer/mc/raw/master/PandoraCraft/PandoraCraft.jar",
+      "size": "5256245",
+      "hash": "E6B7A531B95D0C172ACB704D1F54D1B3"
+    },
+    {
+      "name": "PandoraCraft.json",
+      "url": "http://git.oschina.net/Antecer/mc/raw/master/PandoraCraft/PandoraCraft.json",
+      "size": "6856",
+      "hash": "FF3A95823F9BFA2B269296F0E058C334"
+    }
+  ],
   "mods": [
     {
-      "name": "industrialcraft-2-2.2.642-experimental.jar",
-      "url": "http://ic2api.player.to:8080/job/IC2_experimental/lastSuccessfulBuild/artifact/build/libs/industrialcraft-2-2.2.642-experimental.jar"
-    },
-    {
-      "name": "buildcraft-6.0.18.jar",
-      "url": "http://www.mod-buildcraft.com/releases/BuildCraft/6.0.18/buildcraft-6.0.18.jar"
-    },
-    {
-      "name": "forestry_1.7.10-3.0.0.127.jar",
-      "url": "http://jenkins.ic2.player.to/job/Forestry/lastSuccessfulBuild/artifact/build/dist/forestry_1.7.10-3.0.0.127.jar"
-    },
-    {
-      "name": "appliedenergistics2-rv1-beta-25.jar",
-      "url": "http://addons.cursecdn.com/files/2213/968/appliedenergistics2-rv1-beta-25.jar"
+      "name": "[AE]appliedenergistics2-rv2-beta-28.jar",
+      "url": "http://git.oschina.net/Antecer/mc/raw/master/PandoraCraft/mods/[AE]appliedenergistics2-rv2-beta-28.jar",
+      "size": "2513836",
+      "hash": "21F3CB8C8FC2EBF3000145DF16FF38DE"
     }
   ]
 }</value>

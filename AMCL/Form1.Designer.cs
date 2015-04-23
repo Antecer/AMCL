@@ -932,8 +932,8 @@
             this.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("$this.BackgroundImage")));
             this.ClientSize = new System.Drawing.Size(640, 360);
             this.ControlBox = false;
-            this.Controls.Add(this.InfoPanel);
             this.Controls.Add(this.AssetPanel);
+            this.Controls.Add(this.InfoPanel);
             this.Controls.Add(this.ReNamePanl);
             this.Controls.Add(this.Hidden);
             this.Controls.Add(this.version);
