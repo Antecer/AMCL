@@ -866,7 +866,7 @@ namespace AMCL
             VerName = VerList.SelectedItem.ToString();  //获取当前选定的游戏版本名称
             JavaDir = JavaFile.Text;    //获取Java路径
 
-            ReadUpdateFile(VerName);
+            ReadUpdateFile(VerName);//获取更新配置
 
             if (VerList.Items.Count < 1) return;
             Thread InspectGame = new Thread(new ThreadStart(GameCheck));//创建一个新线程来检测游戏完整性
@@ -1528,23 +1528,21 @@ namespace AMCL
                 {
                     if (File.Exists(UpdateFile))
                     {
-                        StreamReader SRf = new StreamReader(UpdateFile, true);
-                        String UpdateURL = SRf.ReadToEnd();
-                        SRf.Close();
-                        if (UpdateURL.IndexOf("√")>-1) File.WriteAllText(UpdateFile, JSON["updatelist"] + "√");
-                        else File.WriteAllText(UpdateFile, JSON["updatelist"]);
+                        String UpdateURL = File.ReadAllText(UpdateFile).Trim();
+                        String TmpUpdateURL = JSON["updatelist"];
+                        if (UpdateURL.IndexOf("√") > -1) TmpUpdateURL += "√";
+                        if (UpdateURL.IndexOf("#") > -1) TmpUpdateURL += "#";
+                        File.WriteAllText(UpdateFile,TmpUpdateURL);
                     }
                     else
                     {
-                        File.WriteAllText(UpdateFile, JSON["updatelist"] + "√");
+                        File.WriteAllText(UpdateFile, JSON["updatelist"] + "√#");
                     }
                 }
             }
             if (File.Exists(UpdateFile))
             {
-                StreamReader SR = new StreamReader(UpdateFile, true);
-                String UpdateURL = SR.ReadToEnd();
-                SR.Close();
+                String UpdateURL = File.ReadAllText(UpdateFile).Trim();
                 if (UpdateURL.IndexOf("√")>-1)
                 {
                     UpdateAuto.Checked = true;
@@ -1554,6 +1552,15 @@ namespace AMCL
                 {
                     UpdateAuto.Checked = false;
                 }
+                if (UpdateURL.IndexOf("#") > -1)
+                {
+                    ConfigAuto.Checked = true;
+                    UpdateURL = UpdateURL.Replace("#", "");
+                }
+                else
+                {
+                    ConfigAuto.Checked = false;
+                }
                 if ((UpdateURL.StartsWith("http://") || UpdateURL.StartsWith("https://")) && UpdateURL.EndsWith(".json"))
                 {
                     UpdateJsonURL.Text = UpdateURL;
@@ -1562,6 +1569,7 @@ namespace AMCL
                 {
                     UpdateJsonURL.Text = "";
                     UpdateAuto.Checked = false;
+                    ConfigAuto.Checked = false;
                 }
             }
             else
@@ -1585,6 +1593,10 @@ namespace AMCL
                 {
                     UpdateURL = UpdateURL + "√";
                 }
+                if (ConfigAuto.Checked == true)
+                {
+                    UpdateURL = UpdateURL + "#";
+                }
                 File.WriteAllText(UpdateFile, UpdateURL);
             }
         }
@@ -1599,6 +1611,13 @@ namespace AMCL
         /// 复选框状态变更事件
         /// </summary>
         private void UpdateAuto_CheckedChanged(object sender, EventArgs e)
+        {
+            UpdateJsonURL_Save();
+        }
+        /// <summary>
+        /// 复选框状态变更事件
+        /// </summary>
+        private void ConfigAuto_CheckedChanged(object sender, EventArgs e)
         {
             UpdateJsonURL_Save();
         }
@@ -1656,8 +1675,9 @@ namespace AMCL
                     return;
                 }
 
-                if (JSON.ContainsKey("game"))
+                if (JSON.ContainsKey("game"))//检查game节点是否存在
                 {
+                    InfoAdd(false, "正在检查更新游戏主文件：\n", Color.ForestGreen);
                     foreach (var game in JSON["game"])
                     {
                         String filePath = GameDir + @"\versions\" + JSON["name"] + @"\" + game["name"];
@@ -1681,8 +1701,9 @@ namespace AMCL
                     }
                 }
 
-                if (JSON.ContainsKey("mods"))
+                if (JSON.ContainsKey("mods"))//检查mods节点是否存在
                 {
+                    InfoAdd(false, "正在检查更新MODS文件：\n", Color.ForestGreen);
                     ArrayList DList = new ArrayList();
                     foreach (var mod in JSON["mods"])
                     {
@@ -1715,6 +1736,31 @@ namespace AMCL
                         if (modslist[i].ToString().IndexOf("$") > -1) continue;     //例外的删除文件（白名单）
                         if (DList.Contains(modslist[i].ToString())) continue;
                         File.Delete(modsPath + modslist[i]);
+                    }
+                }
+
+                if (JSON.ContainsKey("configs")&&ConfigAuto.Checked)//检查config节点存在与configauto是否选中
+                {
+                    InfoAdd(false, "正在检查更新config配置：\n", Color.ForestGreen);
+                    foreach (var config in JSON["configs"])
+                    {
+                        String configPath = GameDir + @"\versions\" + JSON["name"] + @"\config\" + config["name"];
+                        String configHash = config["hash"];
+                        if (File.Exists(configPath))
+                        {
+                            if (configHash == GetMd5Hash(configPath)) continue;
+                        }
+                        InfoAdd(true, "正在更新" + config["name"], Color.Black);
+                        if (CheckDownLoad(config["url"], configPath))
+                        {
+                            if (configHash == GetMd5Hash(configPath)) InfoAdd(false, "√\n", Color.Green);
+                            else
+                            {
+                                InfoAdd(false, "×\n", Color.Red);
+                                File.Delete(configPath);
+                            }
+                        }
+                        else InfoAdd(false, "×\n", Color.Red);
                     }
                 }
             }

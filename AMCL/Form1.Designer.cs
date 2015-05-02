@@ -88,6 +88,7 @@
             this.time = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.other = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.ConfigAuto = new System.Windows.Forms.CheckBox();
             this.SampleJson = new System.Windows.Forms.GroupBox();
             this.SampleText = new System.Windows.Forms.TextBox();
             this.UpdateAuto = new System.Windows.Forms.CheckBox();
@@ -827,6 +828,7 @@
             // tabPage2
             // 
             this.tabPage2.BackColor = System.Drawing.Color.Transparent;
+            this.tabPage2.Controls.Add(this.ConfigAuto);
             this.tabPage2.Controls.Add(this.SampleJson);
             this.tabPage2.Controls.Add(this.UpdateAuto);
             this.tabPage2.Controls.Add(this.UpdateButton);
@@ -839,6 +841,17 @@
             this.tabPage2.Size = new System.Drawing.Size(592, 274);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "整合包更新";
+            // 
+            // ConfigAuto
+            // 
+            this.ConfigAuto.AutoSize = true;
+            this.ConfigAuto.Location = new System.Drawing.Point(350, 53);
+            this.ConfigAuto.Name = "ConfigAuto";
+            this.ConfigAuto.Size = new System.Drawing.Size(72, 16);
+            this.ConfigAuto.TabIndex = 17;
+            this.ConfigAuto.Text = "MODS配置";
+            this.ConfigAuto.UseVisualStyleBackColor = true;
+            this.ConfigAuto.CheckedChanged += new System.EventHandler(this.ConfigAuto_CheckedChanged);
             // 
             // SampleJson
             // 
@@ -867,7 +880,7 @@
             // UpdateAuto
             // 
             this.UpdateAuto.AutoSize = true;
-            this.UpdateAuto.Location = new System.Drawing.Point(428, 54);
+            this.UpdateAuto.Location = new System.Drawing.Point(428, 53);
             this.UpdateAuto.Name = "UpdateAuto";
             this.UpdateAuto.Size = new System.Drawing.Size(72, 16);
             this.UpdateAuto.TabIndex = 15;
@@ -934,13 +947,13 @@
             this.ClientSize = new System.Drawing.Size(640, 360);
             this.ControlBox = false;
             this.Controls.Add(this.StartPanel);
-            this.Controls.Add(this.SetPanel);
             this.Controls.Add(this.AssetPanel);
             this.Controls.Add(this.InfoPanel);
             this.Controls.Add(this.ReNamePanl);
             this.Controls.Add(this.Hidden);
             this.Controls.Add(this.version);
             this.Controls.Add(this.Exit);
+            this.Controls.Add(this.SetPanel);
             this.ForeColor = System.Drawing.SystemColors.InfoText;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -1046,6 +1059,7 @@
         private System.Windows.Forms.ToolStripMenuItem 显示ToolStripMenuItem;
         private System.Windows.Forms.ComboBox ScreenSize;
         private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.CheckBox ConfigAuto;
     }
 }
 
