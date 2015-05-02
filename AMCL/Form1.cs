@@ -879,8 +879,16 @@ namespace AMCL
         private void GameCheck()
         {
             if (UpdateAuto.Checked == true) ModUpdateLine();
-            LibCheck();                 //检查运行库是否有完整
-            AssCheck();                 //检查资源库是否有完整
+            try
+            {
+                LibCheck();                 //检查运行库是否有完整
+                AssCheck();                 //检查资源库是否有完整
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+                return;
+            }
             RunOrder(JavaDir, strRun);  //启动游戏
         }
         /// <summary>
@@ -1677,7 +1685,7 @@ namespace AMCL
 
                 if (JSON.ContainsKey("game"))//检查game节点是否存在
                 {
-                    InfoAdd(false, "正在检查更新游戏主文件：\n", Color.ForestGreen);
+                    InfoAdd(false, "正在检查更新游戏主文件\n", Color.ForestGreen);
                     foreach (var game in JSON["game"])
                     {
                         String filePath = GameDir + @"\versions\" + JSON["name"] + @"\" + game["name"];
@@ -1703,7 +1711,7 @@ namespace AMCL
 
                 if (JSON.ContainsKey("mods"))//检查mods节点是否存在
                 {
-                    InfoAdd(false, "正在检查更新MODS文件：\n", Color.ForestGreen);
+                    InfoAdd(false, "正在检查更新MODS文件\n", Color.ForestGreen);
                     ArrayList DList = new ArrayList();
                     foreach (var mod in JSON["mods"])
                     {
@@ -1741,7 +1749,7 @@ namespace AMCL
 
                 if (JSON.ContainsKey("configs")&&ConfigAuto.Checked)//检查config节点存在与configauto是否选中
                 {
-                    InfoAdd(false, "正在检查更新config配置：\n", Color.ForestGreen);
+                    InfoAdd(false, "正在检查更新config配置\n", Color.ForestGreen);
                     foreach (var config in JSON["configs"])
                     {
                         String configPath = GameDir + @"\versions\" + JSON["name"] + @"\config\" + config["name"];
