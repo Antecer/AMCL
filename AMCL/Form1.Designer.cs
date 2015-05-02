@@ -401,6 +401,7 @@
             this.label5.Size = new System.Drawing.Size(53, 12);
             this.label5.TabIndex = 11;
             this.label5.Text = "Java路径";
+            this.label5.Click += new System.EventHandler(this.label5_Click);
             // 
             // JavaSolt
             // 
@@ -932,14 +933,14 @@
             this.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("$this.BackgroundImage")));
             this.ClientSize = new System.Drawing.Size(640, 360);
             this.ControlBox = false;
+            this.Controls.Add(this.StartPanel);
+            this.Controls.Add(this.SetPanel);
             this.Controls.Add(this.AssetPanel);
             this.Controls.Add(this.InfoPanel);
             this.Controls.Add(this.ReNamePanl);
             this.Controls.Add(this.Hidden);
             this.Controls.Add(this.version);
             this.Controls.Add(this.Exit);
-            this.Controls.Add(this.SetPanel);
-            this.Controls.Add(this.StartPanel);
             this.ForeColor = System.Drawing.SystemColors.InfoText;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));

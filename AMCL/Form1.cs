@@ -22,8 +22,8 @@ namespace AMCL
         {
             InitializeComponent();
         }
-
         #region 字段
+        String versionLink = @"http://git.oschina.net/Antecer/AMCL/commits/master";//AMCL版本更新历史
         String UpdateVer = @"http://git.oschina.net/Antecer/AMCL/raw/master/AMCL/Properties/AssemblyInfo.cs";//AMCL最新版本号（判定是否需要更新）
         String UpdateExe = @"http://git.oschina.net/Antecer/AMCL/raw/master/AMCL/bin/Release/AMCL.exe";      //AMCL更新地址
 
@@ -306,11 +306,20 @@ namespace AMCL
             if (!File.Exists(JavaFile.Text))
             {
                 MessageBox.Show("Java不存在！");
+                ConfigSet.PerformClick();
                 return;//如果Java不存在则返回
             }
             if (!Directory.Exists(GameFile.Text))
             {
                 MessageBox.Show("游戏目录不存在！");
+                ConfigSet.PerformClick();
+                return;
+            }
+            if (UserName.Text == "")
+            {
+                MessageBox.Show("用户名不存在！");
+                ConfigSet.PerformClick();
+                UserName.Focus();
                 return;
             }
              
@@ -347,7 +356,6 @@ namespace AMCL
         {
             StartPanel.Visible = false;
             SetPanel.Visible = true;
-            SoltLabel.Text = "本机内存:" + GetTotalPhysicalMemory() + "MB";
             SetPanel.BackColor = Color.FromArgb(100, 200, 200, 200);//面板背景色
         }
         //打开游戏文件夹
@@ -361,7 +369,7 @@ namespace AMCL
         //版本号超链接
         private void version_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            System.Diagnostics.Process.Start("https://github.com/Antecer/AMCL");
+            System.Diagnostics.Process.Start(versionLink);
         }
         #endregion
 
@@ -377,7 +385,6 @@ namespace AMCL
                 Initializer();
                 StartPanel.Visible = false;
                 SetPanel.Visible = true;
-                SoltLabel.Text = "本机内存:" + GetTotalPhysicalMemory() + "MB";
                 SetPanel.BackColor = Color.FromArgb(100, 200, 200, 200);//面板背景色
             }
             SetConfig("read");
@@ -409,8 +416,7 @@ namespace AMCL
 
             ScreenSize.Text = "默认大小";
 
-            Random Num = new Random();
-            UserName.Text = "Player" + Num.Next(0, 9999);
+            UserName.Text = "";
             PassWorld.Text = "";
             Registered.Checked = false;
             SetConfig("write");
@@ -645,6 +651,19 @@ namespace AMCL
                 return "unknow";
             }
         }
+        /// <summary>
+        /// 自动获取当前系统已安装的Java
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void label5_Click(object sender, EventArgs e)
+        {
+            string strJavaFile = getValueRegEdit(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\javaws.exe\", "Path");
+            if (strJavaFile != null)
+            {
+                JavaFile.Text = strJavaFile + @"\java.exe";
+            }
+        }
         //点击保存按钮
         private void SaveSet_Click(object sender, EventArgs e)
         {
@@ -805,6 +824,8 @@ namespace AMCL
         {
             if (set == "read")
             {
+                SoltLabel.Text = "本机内存:" + GetTotalPhysicalMemory() + "MB";//只读项目
+
                 GameFile.Text = ReadIni("系统设置", "游戏目录");
                 JavaSolt.Value = Convert.ToUInt32(ReadIni("系统设置", "Java内存"));
                 JavaFile.Text = ReadIni("系统设置", "Java路径");
