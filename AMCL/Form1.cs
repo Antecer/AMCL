@@ -951,7 +951,8 @@ namespace AMCL
                 }
                 else                                            //下载失败，换Forge源重试
                 {
-                    strURL = ForgeLibURL + file;
+                    if (Item.ContainsKey("url")) strURL = ForgeLibURL + file;
+                    else strURL = BMCLLibURL + file;
                     if (CheckDownLoad(strURL, libFile))         //下载成功
                     {
                         InfoAdd(false, "√\n", Color.Green);
@@ -1059,9 +1060,16 @@ namespace AMCL
                 {
                     InfoAdd(false, "√\n", Color.Green);
                 }
-                else                                                //下载失败
+                else                                                //下载失败,更换BMCLAPI源重试
                 {
-                    InfoAdd(false, "×\n", Color.Red);
+                    if (CheckDownLoad(AssetsURLb + AssetHash, AssetFile))//下载成功
+                    {
+                        InfoAdd(false, "√\n", Color.Green);
+                    }
+                    else                                                 //下载失败
+                    {
+                        InfoAdd(false, "×\n", Color.Red);
+                    }
                 }
             }
         }
