@@ -1,5 +1,4 @@
-﻿using ICSharpCode.SharpZipLib.Zip;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,8 +10,8 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using UnZipApp;
 
 namespace AMCL
 {
@@ -987,14 +986,12 @@ namespace AMCL
                         file = file.Replace(".jar", "-" + native["windows"] + ".jar");
                         file = file.Replace("${arch}", GetOSBit().ToString());
                     }
-                    else continue;                                  //跳过windows不需要的natives
-                    InfoAdd(true, "释放natives：" + Item["name"], Color.BlueViolet);
-                    String libFile = GameDir + @"\libraries\" + file;//获取Lib的本地路径
-                    if (Zip.UnZipDir(libFile, NativesPath, "", true)) //解压natives文件
-                    {
-                        InfoAdd(false, "√\n", Color.Green);
-                    }
-                    else InfoAdd(false, "×\n", Color.Red);
+                    else continue;                                      //跳过windows不需要的natives
+                    String nativeName = file.Remove(0, file.LastIndexOf(@"\") + 1);
+                    InfoAdd(true, "释放natives：" + nativeName, Color.BlueViolet);
+                    String libFile = GameDir + @"\libraries\" + file;   //获取Lib的本地路径
+                    ZIP.UnZip(libFile, NativesPath);
+                    InfoAdd(false, "√\n", Color.Green);
                 }
             }
         }
