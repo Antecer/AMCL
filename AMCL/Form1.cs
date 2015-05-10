@@ -880,15 +880,14 @@ namespace AMCL
         private void GameCheck()
         {
             if (UpdateAuto.Checked == true) ModUpdateLine();
+            LibCheck();                 //检查运行库是否有完整
             try
             {
-                LibCheck();                 //检查运行库是否有完整
                 AssCheck();                 //检查资源库是否有完整
             }
             catch (Exception e)
             {
                 MessageBox.Show(e.Message);
-                return;
             }
             RunOrder(JavaDir, strRun);  //启动游戏
         }
@@ -1077,9 +1076,10 @@ namespace AMCL
         /// <param name="strFileName">保存到本地的路径（包含文件名）</param>
         private bool CheckDownLoad(string strURL,string strFileName)
         {
-            if (!Directory.Exists(strFileName))//创建缺失的库文件目录
+            strFileName = strFileName.Replace("/", @"\");
+            string GreatFile = strFileName.Substring(0, strFileName.LastIndexOf(@"\"));
+            if (!Directory.Exists(GreatFile))//创建缺失的库文件目录
             {
-                string GreatFile = strFileName.Substring(0,strFileName.LastIndexOf(@"\"));
                 Directory.CreateDirectory(GreatFile);
             }
             return DownloadFile(strURL, strFileName);
@@ -1092,6 +1092,8 @@ namespace AMCL
         /// <returns>成功返回true，失败返回false</returns>
         public bool DownloadFile(string downLoadUrl, string savePathName)
         {
+            downLoadUrl = downLoadUrl.Replace(@"\", "/");
+            savePathName = savePathName.Replace("/", @"\");
             HttpWebRequest request = null;
             try
             {
@@ -1114,9 +1116,10 @@ namespace AMCL
                 sr.Close();
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 if (request != null) request.Abort();
+                MessageBox.Show(ex.Message);
                 return false;
             }
         }
@@ -1358,6 +1361,8 @@ namespace AMCL
         /// <returns></returns>
         public bool DownProgressFile(string downLoadUrl, string saveFullName, DataGridViewCell Progress)
         {
+            downLoadUrl = downLoadUrl.Replace(@"\", "/");
+            saveFullName = saveFullName.Replace("/", @"\");
             bool flagDown = false;
             HttpWebRequest httpWebRequest = null;
             try
