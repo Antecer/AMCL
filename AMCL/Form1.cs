@@ -1,6 +1,7 @@
 ﻿using ICSharpCode.SharpZipLib.Zip;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -32,7 +33,9 @@ namespace AMCL
         String IndexsURL = @"http://s3.amazonaws.com/Minecraft.Download/indexes/";  //官方资源目录地址（index.json）
         String IndexsURLb = @"http://bmclapi.bangbang93.com/indexes/";              //BMCL资源目录地址
         String AssetsURL = @"http://resources.download.minecraft.net/"; //官方资源库地址
+        String AssetsURLb = @"http://bmclapi.bangbang93.com/assets/";   //BMCL资源库地址
         String LibrariesURL = @"https://libraries.minecraft.net/";      //官方运行库地址
+        String BMCLLibURL = @"http://bmclapi.bangbang93.com/libraries/";//BMCL运行库地址
         String ForgeLibURL = @"http://central.maven.org/maven2/";       //Forge运行库备用地址
         String GameDir = "";    //主目录（../.minecraft）
         String strRun = "";     //启动参数
@@ -51,7 +54,7 @@ namespace AMCL
         /// <param name="StartFileArg">程序执行的参数</param>
         private void RunOrder(string StartFileName, string StartFileArg)
         {
-            DeBugMessage = null;
+            DeBugMessage = "[" + DateTime.Now.ToLongTimeString() + "] [启动参数]: " + StartFileArg + "\n";
             DeBugBuff = false;
             Process CmdProcess = new Process();
             CmdProcess.StartInfo.FileName = StartFileName;      // 命令  
@@ -81,16 +84,15 @@ namespace AMCL
             {
                 if (DeBugBuff)
                 {
-                    DeBugMessage += e.Data + "\n";
+                    DeBugMessage += e.Data.ToString() + "\n";
                 }
                 else
                 {
-                    DeBugMessage += e.Data + "\n";
                     InfoAdd(false, e.Data + "\n", Color.Black);
                     if (e.Data.IndexOf("Starting up SoundSystem") > -1)
                     {
-                        HiddenWindow();//隐藏启动器窗口
-                        DeBugBuff = true;   //启动游戏后不再将Debug数据输出到RichBox(防止richbox卡顿，暂时没别的办法)
+                        HiddenWindow();  //隐藏启动器窗口
+                        DeBugBuff = true;//启动游戏后不再将Debug数据输出到RichBox(防止richbox卡顿，暂时没别的办法)
                     }
                 }
             }
@@ -100,13 +102,12 @@ namespace AMCL
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
-                if(DeBugBuff)
+                if (DeBugBuff)
                 {
-                    DeBugMessage += "[ERROR!]\n{\n" + e.Data + "\n}\n";
+                    DeBugMessage += "[ERROR!]\n{\n" + e.Data.ToString() + "\n}\n";
                 }
                 else
                 {
-                    DeBugMessage += "[ERROR!]\n{\n" + e.Data + "\n}\n";
                     InfoAdd(false, "[ERROR!]\n{\n" + e.Data + "\n}\n", Color.Red);
                 }
             }
@@ -135,6 +136,7 @@ namespace AMCL
             else
             {
                 InfoPanel.Visible = false;
+                DeBugMessage = InfoBox.Text + DeBugMessage;
                 File.WriteAllText(Application.StartupPath + @"\logs\AMCL.log", DeBugMessage);//保存运行日志
                 InfoBox.Clear();
                 StartPanel.Visible = true;
@@ -898,74 +900,102 @@ namespace AMCL
         {
             String NativesPath = GameDir + @"\natives";//获取natives文件夹地址
             String JsonPath = GameDir + @"\versions\" + VerName + @"\" + VerName + ".json"; //获取JSON文件地址
-            StreamReader SR = new StreamReader(JsonPath, true);         //把Json文档载入数据流
-            String Text = SR.ReadToEnd();                               //获取JSON文件内容
-            SR.Close();                                                 //关闭数据流
-            var JSON = new JavaScriptSerializer().Deserialize<dynamic>(Text);//将JSON反序列化为属性集合
+            String Text = File.ReadAllText(JsonPath);
 
-            foreach (var libraries in JSON["libraries"])  //遍历Lib库文件,检查存在性
+            InfoAdd(true, "检索libraries列表\n", Color.BlueViolet);
+            Dictionary<string, object> JSON = J2D.JsonToDictionary(Text);   //将Json数据转成Dictionary字典
+            ArrayList LibArray = (ArrayList)JSON["libraries"];              //将libraries转换为数组
+            foreach (var Lib in LibArray)                                   //遍历libraries数组
             {
-                string[] temp = libraries["name"].Split(':');   //拆分字符串
-                string file = temp[0].Replace(".", @"\");       //获取文件地址
-                for (int j = 1; j < temp.Length; j++)
+                Dictionary<string, object> Item = (Dictionary<string, object>)Lib;
+
+                String[] temp = null;
+                String file = null;
+                String strURL = null;
+                if (Item.ContainsKey("name"))
                 {
-                    file += @"\" + temp[j];
+                    temp = Item["name"].ToString().Split(':');     //拆分字符串获取文件地址
+                    file = temp[0].Replace(".", @"\");
+                    for (int i = 1; i < temp.Length; i++)
+                    {
+                        file += @"\" + temp[i];
+                    }
+                    file += @"\" + temp[temp.Length - 2] + "-" + temp[temp.Length - 1] + ".jar";
                 }
-                if (libraries.ContainsKey("natives"))
+                if (Item.ContainsKey("natives"))                    //获取对应系统的库文件版本
                 {
-                    if (!libraries["natives"].ContainsKey("windows")) continue;
-                    file += @"\" + temp[temp.Length - 2] + "-" + temp[temp.Length - 1] + "-" + libraries["natives"]["windows"] + ".jar";
-                    file = file.Replace("${arch}", GetOSBit().ToString());
+                    Dictionary<string, object> native = (Dictionary<string, object>)Item["natives"];
+                    if (native.ContainsKey("windows"))
+                    {
+                        file = file.Replace(".jar", "-" + native["windows"] + ".jar");
+                        file = file.Replace("${arch}", GetOSBit().ToString());
+                    }
+                    else continue;                                  //跳过windows不需要的natives
+                }
+                if (Item.ContainsKey("url"))                        //获取库文件的下载链接
+                {
+                    strURL = Item["url"] + file;
+                    if (Item["name"].ToString().IndexOf("forge") > -1) strURL = strURL.Replace(".jar", "-universal.jar");
                 }
                 else
                 {
-                    file += @"\" + temp[temp.Length - 2] + "-" + temp[temp.Length - 1] + ".jar";
+                    strURL = LibrariesURL + file;
                 }
-                string libFile = GameDir + @"\libraries\" + file; //获取Lib的本地路径
-                if (File.Exists(libFile)) continue;     //若文件存在则继续检测下一个
-                string strURL = LibrariesURL + file;
-                if (libraries.ContainsKey("url"))
+                String libFile = GameDir + @"\libraries\" + file;   //获取Lib的本地路径
+                if (File.Exists(libFile))
                 {
-                    strURL = libraries["url"] + file;//获取Lib下载地址(若存在)
-                    if (libraries["name"].IndexOf("minecraftforge") > -1) strURL = strURL.Replace(".jar", "-universal.jar");
-                    else if (libraries["name"].IndexOf("fml") > -1) strURL = strURL.Replace(".jar", "-universal.jar");
+                    Decimal libUpLength = GetHttpLength(strURL);
+                    Decimal libFiLength = new FileInfo(libFile).Length;
+                    //MessageBox.Show(libUpLength + "\r\n" + libFiLength);
+                    if (libUpLength == libFiLength) continue;       //若文件长度相同则跳过
                 }
-                InfoAdd(true, "下载libraries：" + libraries["name"], Color.BlueViolet);
-                if (CheckDownLoad(strURL, libFile))           //下载成功
+
+                InfoAdd(true, "下载libraries：" + Item["name"], Color.BlueViolet);
+                if (CheckDownLoad(strURL, libFile))             //下载成功
                 {
                     InfoAdd(false, "√\n", Color.Green);
                 }
-                else                                        //下载失败，换源重试
+                else                                            //下载失败，换Forge源重试
                 {
                     strURL = ForgeLibURL + file;
-                    if (CheckDownLoad(strURL, libFile))           //下载成功
+                    if (CheckDownLoad(strURL, libFile))         //下载成功
                     {
                         InfoAdd(false, "√\n", Color.Green);
                     }
                     else                                        //下载失败
                     {
+                        File.Delete(strURL);
                         InfoAdd(false, "×\n", Color.Red);
                     }
                 }
             }
 
             if (!Directory.Exists(NativesPath)) Directory.CreateDirectory(NativesPath);//判断natives文件夹是否存在
-            foreach (var libraries in JSON["libraries"])    //遍历libraries文件,查找natives库
+            foreach (var Lib in LibArray)                            //遍历libraries文件,查找natives库
             {
-                string[] temp = libraries["name"].Split(':');   //拆分字符串
-                string file = temp[0].Replace(".", @"\");       //获取文件地址
-                for (int j = 1; j < temp.Length; j++)
+                Dictionary<string, object> Item = (Dictionary<string, object>)Lib;
+                String[] temp = null;
+                String file = null;
+                if (Item.ContainsKey("extract"))                     //获取需要释放的natives文件
                 {
-                    file += @"\" + temp[j];
-                }
-                if (libraries.ContainsKey("natives"))           //解压natives文件
-                {
-                    if (!libraries["natives"].ContainsKey("windows")) continue;
-                    file += @"\" + temp[temp.Length - 2] + "-" + temp[temp.Length - 1] + "-" + libraries["natives"]["windows"] + ".jar";
-                    file = file.Replace("${arch}", GetOSBit().ToString());
-                    string libFile = GameDir + @"\libraries\" + file;   //获取Lib的本地路径
-                    InfoAdd(true, "释放natives：" + libraries["name"], Color.BlueViolet);
-                    if (UnZipDir(libFile, NativesPath, "", true))      //解压natives文件
+                    temp = Item["name"].ToString().Split(':');       //拆分字符串获取文件地址
+                    file = temp[0].Replace(".", @"\");
+                    for (int i = 1; i < temp.Length; i++)
+                    {
+                        file += @"\" + temp[i];
+                    }
+                    file += @"\" + temp[temp.Length - 2] + "-" + temp[temp.Length - 1] + ".jar";
+
+                    Dictionary<string, object> native = (Dictionary<string, object>)Item["natives"];
+                    if (native.ContainsKey("windows"))
+                    {
+                        file = file.Replace(".jar", "-" + native["windows"] + ".jar");
+                        file = file.Replace("${arch}", GetOSBit().ToString());
+                    }
+                    else continue;                                  //跳过windows不需要的natives
+                    InfoAdd(true, "释放natives：" + Item["name"], Color.BlueViolet);
+                    String libFile = GameDir + @"\libraries\" + file;//获取Lib的本地路径
+                    if (Zip.UnZipDir(libFile, NativesPath, "", true)) //解压natives文件
                     {
                         InfoAdd(false, "√\n", Color.Green);
                     }
@@ -1008,101 +1038,38 @@ namespace AMCL
                     }
                 }
             }
-            String Text;
-            String AssetHash;
-            String AssetSize;
-            StreamReader SR = new StreamReader(JsonPath,true);       //把Json文档载入数据流
-            while ((Text = SR.ReadLine()) != null)              //获取一行JSON文件内容
+
+            String Text = File.ReadAllText(JsonPath);   //获取Json文档内容
+            Dictionary<string, object> JSON = J2D.JsonToDictionary(Text);//将Json数据转成dictionary格式
+            Dictionary<string, object> objects = (Dictionary<string, object>)JSON["objects"];
+            foreach (KeyValuePair<string, object> item in objects)  //遍历objects节点
             {
-                Text = Text.Replace("\"", "").Replace(":", "").Replace(" ", "");//处理字符串
-                if (Text.IndexOf("hash") > -1) 
+                //String AssetName = item.Key.ToString() + "\n";    //获取子节点名
+                String AssetHash = "";                      //创建资源文件SHA1存储变量
+                //String AssetSize = "";                      //创建资源文件长度存储变量
+                Dictionary<string, object> subItem = (Dictionary<string, object>)item.Value;
+                foreach (var str in subItem)
                 {
-                    AssetHash =Text.Substring(4, 2) + @"\" + Text.Substring(4, 40);
-                    Text = SR.ReadLine();
-                    Text = Text.Replace("\"", "").Replace(":", "").Replace(" ", "");
-                    if (Text.IndexOf("size") > -1)
-                    {
-                        AssetSize = Text.Substring(4, Text.Length - 4);
-
-                        String AssetFile = GameDir + @"\assets\objects\" + AssetHash;
-                        if (File.Exists(AssetFile)) //判断资源文件是否存在
-                        {
-                            FileInfo FileSize = new FileInfo(AssetFile);
-                            if (FileSize.Length == long.Parse(AssetSize)) continue;//判断资源文件大小
-                            else File.Delete(AssetFile);    //删除大小不符的资源文件
-                        }
-
-                        InfoAdd(true, "下载assets：" + AssetHash, Color.BlueViolet);
-                        if (CheckDownLoad(AssetsURL + AssetHash, AssetFile))        //下载成功
-                        {
-                            InfoAdd(false, "√\n", Color.Green);
-                        }
-                        else                                                //下载失败
-                        {
-                            InfoAdd(false, "×\n", Color.Red); 
-                        }
-                    }
+                    if (str.Key == "hash") AssetHash += str.Value;  //从Json获取资源文件的SHA1
+                    //if (str.Key == "size") AssetSize += str.Value;  //从Json获取资源文件的长度
                 }
-                
-            }                            
-            SR.Close();                                         //关闭数据流
-        }
-        /// <summary>
-        /// 解压缩一个 zip 文件。
-        /// </summary>
-        /// <param name="zipFileName">要解压的 zip 文件</param>
-        /// <param name="dirPath">zip 文件的解压目录</param>
-        /// <param name="password">zip 文件的密码。</param>
-        /// <param name="overWrite">是否覆盖已存在的文件。</param>
-        private bool UnZipDir(string zipFileName, string dirPath, string password, bool overWrite)
-        {
-            if (!File.Exists(zipFileName)) return false;
-            if (!Directory.Exists(dirPath)) return false;
-            if (!dirPath.EndsWith(@"/")) dirPath = dirPath + @"\";
-            ZipInputStream s = new ZipInputStream(File.OpenRead(zipFileName));
-            s.Password = password;
-            ZipEntry theEntry;
-
-            while ((theEntry = s.GetNextEntry()) != null)//判断下一个zip 接口是否未空
-            {
-                string dirName = "";
-                string pathToZip = "";
-                pathToZip = theEntry.Name;
-
-                if (pathToZip != "")
-                    dirName = Path.GetDirectoryName(pathToZip) + @"/";
-                string fileName = Path.GetFileName(pathToZip);
-                Directory.CreateDirectory(dirPath + dirName);
-                if (fileName != "")
+                String AssetFile = GameDir + @"\assets\objects\" + AssetHash.Substring(0, 2) + @"\" + AssetHash;
+                if (File.Exists(AssetFile)) //判断资源文件是否存在
                 {
-                    try
-                    {
-                        if ((File.Exists(dirPath + dirName + fileName) && overWrite) || (!File.Exists(dirPath + dirName + fileName)))
-                        {
-                            FileStream streamWriter = File.Create(dirPath + dirName + fileName);
-                            int size = 2048;
-                            byte[] data = new byte[2048];
-                            while (true)
-                            {
-                                size = s.Read(data, 0, data.Length);
-                                if (size > 0)
-                                    streamWriter.Write(data, 0, size);
-                                else
-                                    break;
-                            }
-                            streamWriter.Close();
-                        }
-                    }
-                    catch (ZipException ex)
-                    {
-                        FileStream fs = new FileStream(AppDomain.CurrentDomain.BaseDirectory + "log.txt", FileMode.OpenOrCreate, FileAccess.Write);
-                        StreamWriter sw = new StreamWriter(fs);
-                        sw.WriteLine(ex.Message);
-                    }
+                    if (Hash.GetSHA1Hash(AssetFile) == AssetHash) continue;
+                    else File.Delete(AssetFile);
+                }
+                InfoAdd(true, "下载assets：" + AssetHash, Color.BlueViolet);
+                AssetHash = AssetHash.Substring(0, 2) + "/" + AssetHash;
+                if (CheckDownLoad(AssetsURL + AssetHash, AssetFile))//下载成功
+                {
+                    InfoAdd(false, "√\n", Color.Green);
+                }
+                else                                                //下载失败
+                {
+                    InfoAdd(false, "×\n", Color.Red);
                 }
             }
-            s.Close();
-            return true;
         }
         /// <summary>
         /// 下载文件并创建指定Path的所有目录和子目录
@@ -1195,71 +1162,71 @@ namespace AMCL
             String NativesPath = GameFile.Text + @"\natives";//
             String JsonPath = GameFile.Text + @"\versions\" + VerName + @"\" + VerName + ".json"; //获取JSON文件地址
 
-            StreamReader SR = new StreamReader(JsonPath, true);         //把目标文档载入数据流
-            String Text = SR.ReadToEnd();                               //获取JSON文件内容
-            SR.Close();                                                 //关闭数据流
-            var JSON = new JavaScriptSerializer().Deserialize<dynamic>(Text);//将JSON反序列化为属性集合
-            
-            String Lib = "";                        //获取运行需要的库文件
-            foreach (var libraries in JSON["libraries"])
+
+            String RunStr = null;                       //定义启动参数字符串
+            String LibList = null;                      //定义启动运行库字符串
+            String Text = File.ReadAllText(JsonPath);   //载入version.json
+            Dictionary<string, object> JSON = J2D.JsonToDictionary(Text);   //将Json数据转成dictionary格式
+            ArrayList LibArray = (ArrayList)JSON["libraries"];              //将libraries转换为数组
+            foreach (var Lib in LibArray)                                   //遍历libraries数组
             {
-                string[] temp = libraries["name"].Split(':');   //拆分字符串
-                string file = temp[0].Replace(".", @"\");       //获取文件地址
-                for (int j = 1; j < temp.Length; j++)
+                Dictionary<string, object> Item = (Dictionary<string, object>)Lib;
+
+                String[] temp = null;
+                String file = null;
+                if (Item.ContainsKey("name"))
                 {
-                    file += @"\" + temp[j];
-                }
-                if (libraries.ContainsKey("natives"))
-                {
-                    if (!libraries["natives"].ContainsKey("windows")) continue;
-                    file += @"\" + temp[temp.Length - 2] + "-" + temp[temp.Length - 1] + "-" + libraries["natives"]["windows"] + ".jar";
-                    file = file.Replace("${arch}", GetOSBit().ToString());
-                }
-                else
-                {
+                    temp = Item["name"].ToString().Split(':');     //拆分字符串获取文件地址
+                    file = temp[0].Replace(".", @"\");
+                    for (int i = 1; i < temp.Length; i++)
+                    {
+                        file += @"\" + temp[i];
+                    }
                     file += @"\" + temp[temp.Length - 2] + "-" + temp[temp.Length - 1] + ".jar";
                 }
-                file = GameFile.Text + @"\libraries\" + file;
-                Lib += file + ";";
+                if (Item.ContainsKey("extract")) continue;          //提取文件，不加入启动参数
+                if (Item.ContainsKey("rules"))
+                {
+                    ArrayList rules = (ArrayList)Item["rules"];
+                    if (rules.Count < 2) continue;                  //跳过windows不需要的lib
+                }
+                String libFile = GameDir + @"\libraries\" + file;   //获取Lib的本地路径
+                LibList += libFile + ";";
             }
+            RunStr = "-Xincgc -Xmx" + JavaSolt.Value + "M ";
+            RunStr += "-Dfml.ignoreInvalidMinecraftCertificates=true -Dfml.ignorePatchDiscrepancies=true ";
+            RunStr += "-Djava.library.path=\"" + NativesPath + "\" ";
+            RunStr += "-cp \"" + LibList + StartPath + "\" " + JSON["mainClass"] + " ";
 
-            String RunStr = "-Xmx" + JavaSolt.Value + "M -Djava.library.path=\"" + NativesPath + "\" ";
-            RunStr += "-cp \"" + Lib + StartPath + "\" " + JSON["mainClass"] + " ";
-
-            String Arguments = JSON["minecraftArguments"];
-            Arguments = Arguments.Replace("${auth_player_name}", UserName.Text); //设置用户名
-            Arguments = Arguments.Replace("${version_name}", VerName);           //设置版本号
-            Arguments = Arguments.Replace("${game_directory}", "\"" + GameFile.Text + @"\versions\" + VerName + "\"");
-            Arguments = Arguments.Replace("${game_assets}", "\"" + GameFile.Text + @"\assets" + "\"");
-            Arguments = Arguments.Replace("${assets_root}", "\"" + GameFile.Text + @"\assets" + "\"");
-            Arguments = Arguments.Replace("${auth_uuid}", "0");
-            Arguments = Arguments.Replace("${auth_access_token}", "0");
-            Arguments = Arguments.Replace("${user_properties}","{}");
-            Arguments = Arguments.Replace("${user_type}", "Offline");
-
-            if (JSON.ContainsKey("assets"))
-            {
-                VerAssets = JSON["assets"];
-                Arguments = Arguments.Replace("${assets_index_name}", JSON["assets"]);
-            }
+            if (JSON.ContainsKey("assets")) VerAssets = JSON["assets"].ToString();  //获取资源文件版本
             else VerAssets = "old";
+            var Arguments = new StringBuilder(JSON["minecraftArguments"].ToString());//定义启动参数字符串
+            Arguments.Replace("${auth_player_name}", UserName.Text);//用户名
+            Arguments.Replace("${version_name}", VerName);          //游戏版本号
+            //Arguments.Replace("${game_directory}", "\"" + GameFile.Text + @"\versions\" + VerName + "\"");//游戏目录
+            Arguments.Replace("${game_directory}", "\"" + GameFile.Text + @"\versions\" + VerName + "\"");
+            Arguments.Replace("${game_assets}", "\"" + GameFile.Text + "\\assets\""); //资源文件目录
+            Arguments.Replace("${assets_root}", "\"" + GameFile.Text + "\\assets\"");
+            Arguments.Replace("${assets_index_name}", VerAssets);   //资源文件版本
+            Arguments.Replace("${auth_uuid}", "0");                 //
+            Arguments.Replace("${auth_access_token}", "0");         //
+            Arguments.Replace("${user_properties}", "{}");
+            Arguments.Replace("${user_type}", "Legacy");
 
-            if ((!Arguments.Contains("--width"))||(!Arguments.Contains("--fullscreen")))//设置游戏窗口大小
+            if ((!Arguments.ToString().Contains("--width"))||(!Arguments.ToString().Contains("--fullscreen")))//设置游戏窗口大小
             {
                 if (ScreenSize.Text == "FullScreen")
                 {
-                    Arguments += " --fullscreen";
+                    Arguments.Append(" --fullscreen");
                 }
                 else if (ScreenSize.Text.Contains("*"))
                 {
                     String[] gamesize = ScreenSize.Text.Trim().Split('*');
-                    Arguments += " --width " + gamesize[0].Trim();
-                    Arguments += " --height " + gamesize[1].Trim();
+                    Arguments.Append(" --width " + gamesize[0].Trim());
+                    Arguments.Append(" --height " + gamesize[1].Trim());
                 }
             }
-
-            RunStr += Arguments;
-
+            RunStr += Arguments.ToString();
             return RunStr;
         }
         /// <summary>
@@ -1311,30 +1278,40 @@ namespace AMCL
         private void VerListCheck()
         {
             VerListClear(); //清空表格数据行
-            String JsonPath = GameDir + @"\versions\versions.json"; //获取资源JSON文件地址
-            if (File.Exists(JsonPath)) File.Delete(JsonPath);       //删除旧的版本目录
+            VerType = "<所有>";
+            VerTime = "<所有>";
+            String JsonPath = GameDir + @"\versions\versions.json";         //获取资源JSON文件地址
+            if (File.Exists(JsonPath)) File.Delete(JsonPath);               //删除旧的版本目录
+            VerId = "正在获取";
+            VerListAdd();
             if (CheckDownLoad(VerURL + "versions.json", JsonPath)) { }      //下载成功
             else                                                            //下载失败，换源重试
             {
-                if (CheckDownLoad(VerURLb + "versions.json", JsonPath)){}   //下载成功
+                if (CheckDownLoad(VerURLb + "versions.json", JsonPath)) { } //下载成功
                 else                                                        //下载失败
                 {
+                    VerListClear();
+                    VerId = "获取失败";
+                    VerType = "无";
+                    VerTime = "无";
+                    VerListAdd();
                     return;
                 }
             }
-            StreamReader SR = new StreamReader(JsonPath, true);         //把Json文档载入数据流
-            String Text = SR.ReadToEnd();                               //获取JSON文件内容
-            SR.Close();                                                 //关闭数据流
-            var JSON = new JavaScriptSerializer().Deserialize<dynamic>(Text);//将JSON反序列化为属性集合
-            foreach (var versions in JSON["versions"])
+            VerListClear();
+            String Text = File.ReadAllText(JsonPath);                       //获取JSON文件内容
+            Dictionary<string, object> JSON = J2D.JsonToDictionary(Text);   //将Json数据转成dictionary字典
+            ArrayList VerArray = (ArrayList)JSON["versions"];               //将libraries转换为数组
+            foreach (var version in VerArray)                               //遍历libraries数组
             {
-                VerId = versions["id"];
-                VerType = versions["type"];
-                VerRelease = versions["releaseTime"];
+                Dictionary<string, object> Item = (Dictionary<string, object>)version;
+                VerId = Item["id"].ToString();
+                VerType = Item["type"].ToString();
+                VerTime = Item["releaseTime"].ToString();
                 VerListAdd();
             }
         }
-        String VerId, VerType, VerRelease;
+        String VerId, VerType, VerTime;
         /// <summary>
         /// 通过委托向表格添加数据
         /// </summary>
@@ -1351,7 +1328,7 @@ namespace AMCL
                 int index = VerGridView.Rows.Count - 1;
                 VerGridView.Rows[index].Cells[0].Value = VerId;
                 VerGridView.Rows[index].Cells[1].Value = VerType;
-                VerGridView.Rows[index].Cells[2].Value = VerRelease;
+                VerGridView.Rows[index].Cells[2].Value = VerTime;
                 VerGridView.Rows[index].Cells[3].Value = "双击下载";
             }
         }
@@ -1423,6 +1400,7 @@ namespace AMCL
         {
             if (RowNum < 0) return;
             string SelectVer = VerGridView.Rows[RowNum].Cells[0].Value.ToString();
+            if (SelectVer == "正在获取" || SelectVer == "获取失败") return;
             if(GameFile.Text.IndexOf(".minecraft") < 0)     //判断游戏根目录是否存在，若不存在则创建！
             {
                 if(Directory.Exists(GameFile.Text))
@@ -1529,15 +1507,14 @@ namespace AMCL
             String UpdateFile = GameFile.Text + @"\versions\" + SelectVer + @"\update.json";
             if (File.Exists(UpdateList))
             {
-                StreamReader SR = new StreamReader(UpdateList, true);
-                var JSON = new JavaScriptSerializer().Deserialize<dynamic>(SR.ReadToEnd());
-                SR.Close();
+                String Text = File.ReadAllText(UpdateList);
+                Dictionary<string, object> JSON = J2D.JsonToDictionary(Text);//将Json数据转成dictionary字典
                 if (JSON.ContainsKey("updatelist"))
                 {
                     if (File.Exists(UpdateFile))
                     {
                         String UpdateURL = File.ReadAllText(UpdateFile).Trim();
-                        String TmpUpdateURL = JSON["updatelist"];
+                        String TmpUpdateURL = JSON["updatelist"].ToString();
                         if (UpdateURL.IndexOf("√") > -1) TmpUpdateURL += "√";
                         if (UpdateURL.IndexOf("#") > -1) TmpUpdateURL += "#";
                         File.WriteAllText(UpdateFile,TmpUpdateURL);
@@ -1668,12 +1645,12 @@ namespace AMCL
                 return;
             }
 
-            var JSON = new JavaScriptSerializer().Deserialize<dynamic>(Text);//将JSON反序列化为属性集合
+            Dictionary<string, object> JSON = J2D.JsonToDictionary(Text);//将Json数据转成dictionary字典
             try
             {
                 if (JSON.ContainsKey("name"))   //判断指定的游戏目录是否存在
                 {
-                    String VersionDir = GameDir + @"\versions\" + JSON["name"];
+                    String VersionDir = GameDir + @"\versions\" + JSON["name"].ToString();
                     if (!Directory.Exists(VersionDir)) Directory.CreateDirectory(VersionDir);
                     File.WriteAllText(VersionDir + "\\updatelist.json", Text);//保存updatelist.json文件
                 }
@@ -1686,19 +1663,21 @@ namespace AMCL
                 if (JSON.ContainsKey("game"))//检查game节点是否存在
                 {
                     InfoAdd(false, "正在检查更新游戏主文件\n", Color.ForestGreen);
-                    foreach (var game in JSON["game"])
+                    ArrayList game = (ArrayList)JSON["game"];               //将game节点转换为数组
+                    foreach (var Item in game)                              //遍历game数组
                     {
-                        String filePath = GameDir + @"\versions\" + JSON["name"] + @"\" + game["name"];
-                        String fileHash = game["hash"];
+                        Dictionary<string, object> Subitem = (Dictionary<string, object>)Item;
+                        String filePath = GameDir + @"\versions\" + JSON["name"] + @"\" + Subitem["name"];
+                        String fileHash = Subitem["hash"].ToString();
                         if (File.Exists(filePath))
                         {
-                            if (fileHash == GetMd5Hash(filePath)) continue;
+                            if (fileHash == Hash.GetSHA1Hash(filePath)) continue;
                             File.Delete(filePath);
                         }
-                        InfoAdd(true, "正在更新" + game["name"], Color.Black);
-                        if (CheckDownLoad(game["url"], filePath))
+                        InfoAdd(true, "正在更新" + Subitem["name"].ToString(), Color.Black);
+                        if (CheckDownLoad(Subitem["url"].ToString(), filePath))
                         {
-                            if (fileHash == GetMd5Hash(filePath)) InfoAdd(false, "√\n", Color.Green);
+                            if (fileHash == Hash.GetSHA1Hash(filePath)) InfoAdd(false, "√\n", Color.Green);
                             else
                             {
                                 InfoAdd(false, "×\n", Color.Red);
@@ -1707,26 +1686,29 @@ namespace AMCL
                         }
                         else InfoAdd(false, "×\n", Color.Red);
                     }
+
                 }
 
                 if (JSON.ContainsKey("mods"))//检查mods节点是否存在
                 {
                     InfoAdd(false, "正在检查更新MODS文件\n", Color.ForestGreen);
-                    ArrayList DList = new ArrayList();
-                    foreach (var mod in JSON["mods"])
+                    ArrayList modlist = new ArrayList();                    //创建本地mod列表数组
+                    ArrayList mods = (ArrayList)JSON["mods"];               //将mods节点转换为数组
+                    foreach (var Item in mods)                              //遍历mods数组，下载mod
                     {
-                        DList.Add(mod["name"]);
-                        String modPath = GameDir + @"\versions\" + JSON["name"] + @"\mods\" + mod["name"];
-                        String modHash = mod["hash"];
+                        Dictionary<string, object> Subitem = (Dictionary<string, object>)Item;
+                        modlist.Add(Subitem["name"].ToString());
+                        String modPath = GameDir + @"\versions\" + JSON["name"] + @"\mods\" + Subitem["name"];
+                        String modHash = Subitem["hash"].ToString();
                         if (File.Exists(modPath))
                         {
-                            if (modHash == GetMd5Hash(modPath)) continue;
+                            if (modHash == Hash.GetSHA1Hash(modPath)) continue;
                             File.Delete(modPath);
                         }
-                        InfoAdd(true, "正在更新" + mod["name"], Color.Black);
-                        if (CheckDownLoad(mod["url"], modPath))
+                        InfoAdd(true, "正在更新" + Subitem["name"], Color.Black);
+                        if (CheckDownLoad(Subitem["url"].ToString(), modPath))
                         {
-                            if (modHash == GetMd5Hash(modPath)) InfoAdd(false, "√\n", Color.Green);
+                            if (modHash == Hash.GetSHA1Hash(modPath)) InfoAdd(false, "√\n", Color.Green);
                             else
                             {
                                 InfoAdd(false, "×\n", Color.Red);
@@ -1739,29 +1721,31 @@ namespace AMCL
                     String modsPath = GameDir + @"\versions\" + JSON["name"] + @"\mods\";
                     DirectoryInfo modsInfo = new DirectoryInfo(modsPath);
                     FileInfo[] modslist = modsInfo.GetFiles();
-                    for (int i = 0; i < modslist.Length; i++)   //遍历本地mods，删除旧文件
+                    foreach (var mod in modslist)                       //遍历本地mods，删除旧文件
                     {
-                        if (modslist[i].ToString().IndexOf("$") > -1) continue;     //例外的删除文件（白名单）
-                        if (DList.Contains(modslist[i].ToString())) continue;
-                        File.Delete(modsPath + modslist[i]);
+                        if (mod.ToString().IndexOf("$") > -1) continue; //例外的删除文件（白名单）
+                        if (modlist.Contains(mod.ToString())) continue; //跳过刚更新的文件
+                        File.Delete(modsPath + mod);                    //删除旧文件
                     }
                 }
 
-                if (JSON.ContainsKey("configs")&&ConfigAuto.Checked)//检查config节点存在与configauto是否选中
+                if (JSON.ContainsKey("configs")&&ConfigAuto.Checked)    //检查config节点存在与configauto是否选中
                 {
                     InfoAdd(false, "正在检查更新config配置\n", Color.ForestGreen);
-                    foreach (var config in JSON["configs"])
+                    ArrayList configs = (ArrayList)JSON["configs"];     //将configs节点转换为数组
+                    foreach (var Item in configs)                       //遍历configs数组
                     {
-                        String configPath = GameDir + @"\versions\" + JSON["name"] + @"\config\" + config["name"];
-                        String configHash = config["hash"];
+                        Dictionary<string, object> Subitem = (Dictionary<string, object>)Item;
+                        String configPath = GameDir + @"\versions\" + JSON["name"] + @"\config\" + Subitem["name"];
+                        String configHash = Subitem["hash"].ToString();
                         if (File.Exists(configPath))
                         {
-                            if (configHash == GetMd5Hash(configPath)) continue;
+                            if (configHash == Hash.GetSHA1Hash(configPath)) continue;
                         }
-                        InfoAdd(true, "正在更新" + config["name"], Color.Black);
-                        if (CheckDownLoad(config["url"], configPath))
+                        InfoAdd(true, "正在更新" + Subitem["name"], Color.Black);
+                        if (CheckDownLoad(Subitem["url"].ToString(), configPath))
                         {
-                            if (configHash == GetMd5Hash(configPath)) InfoAdd(false, "√\n", Color.Green);
+                            if (configHash == Hash.GetSHA1Hash(configPath)) InfoAdd(false, "√\n", Color.Green);
                             else
                             {
                                 InfoAdd(false, "×\n", Color.Red);
