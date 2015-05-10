@@ -902,7 +902,7 @@ namespace AMCL
             String JsonPath = GameDir + @"\versions\" + VerName + @"\" + VerName + ".json"; //获取JSON文件地址
             String Text = File.ReadAllText(JsonPath);
 
-            InfoAdd(true, "检索libraries列表\n", Color.BlueViolet);
+            InfoAdd(true, "检索libraries文件\n", Color.BlueViolet);
             Dictionary<string, object> JSON = J2D.JsonToDictionary(Text);   //将Json数据转成Dictionary字典
             ArrayList LibArray = (ArrayList)JSON["libraries"];              //将libraries转换为数组
             foreach (var Lib in LibArray)                                   //遍历libraries数组
@@ -942,13 +942,7 @@ namespace AMCL
                     strURL = LibrariesURL + file;
                 }
                 String libFile = GameDir + @"\libraries\" + file;   //获取Lib的本地路径
-                if (File.Exists(libFile))
-                {
-                    Decimal libUpLength = GetHttpLength(strURL);
-                    Decimal libFiLength = new FileInfo(libFile).Length;
-                    //MessageBox.Show(libUpLength + "\r\n" + libFiLength);
-                    if (libUpLength == libFiLength) continue;       //若文件长度相同则跳过
-                }
+                if (File.Exists(libFile)) continue;                 //若文件存在则跳过
 
                 InfoAdd(true, "下载libraries：" + Item["name"], Color.BlueViolet);
                 if (CheckDownLoad(strURL, libFile))             //下载成功
