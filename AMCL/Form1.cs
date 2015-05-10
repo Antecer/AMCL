@@ -914,12 +914,12 @@ namespace AMCL
                 if (Item.ContainsKey("name"))
                 {
                     temp = Item["name"].ToString().Split(':');     //拆分字符串获取文件地址
-                    file = temp[0].Replace(".", @"\");
+                    file = temp[0].Replace(".", "/");
                     for (int i = 1; i < temp.Length; i++)
                     {
-                        file += @"\" + temp[i];
+                        file += "/" + temp[i];
                     }
-                    file += @"\" + temp[temp.Length - 2] + "-" + temp[temp.Length - 1] + ".jar";
+                    file += "/" + temp[temp.Length - 2] + "-" + temp[temp.Length - 1] + ".jar";
                 }
                 if (Item.ContainsKey("natives"))                    //获取对应系统的库文件版本
                 {
@@ -1415,13 +1415,13 @@ namespace AMCL
             }
             string SelectDown = GameFile.Text + @"\versions\" + SelectVer + @"\";
             Directory.CreateDirectory(SelectDown);
-            if (DownProgressFile(VerURL + SelectVer + @"\" + SelectVer + ".json", SelectDown + SelectVer + ".json", VerGridView.Rows[RowNum].Cells[3]))//下载成功
+            if (DownProgressFile(VerURL + SelectVer + "/" + SelectVer + ".json", SelectDown + SelectVer + ".json", VerGridView.Rows[RowNum].Cells[3]))//下载成功
             {
                 VerGridView.Rows[RowNum].Cells[3].Value = "JSON下载完成！";
             }
             else                                                            //下载失败，换源重试
             {
-                if (DownProgressFile(VerURLb + SelectVer + @"\" + SelectVer + ".json", SelectDown + SelectVer + ".json", VerGridView.Rows[RowNum].Cells[3]))//下载成功
+                if (DownProgressFile(VerURLb + SelectVer + "/" + SelectVer + ".json", SelectDown + SelectVer + ".json", VerGridView.Rows[RowNum].Cells[3]))//下载成功
                 {
                     VerGridView.Rows[RowNum].Cells[3].Value = "JSON下载完成！";
                 }
@@ -1431,13 +1431,13 @@ namespace AMCL
                     return;
                 }
             }
-            if (DownProgressFile(VerURL + SelectVer + @"\" + SelectVer + ".jar", SelectDown + SelectVer + ".jar", VerGridView.Rows[RowNum].Cells[3]))//下载成功
+            if (DownProgressFile(VerURL + SelectVer + "/" + SelectVer + ".jar", SelectDown + SelectVer + ".jar", VerGridView.Rows[RowNum].Cells[3]))//下载成功
             {
                 VerGridView.Rows[RowNum].Cells[3].Value = "JAR下载完成！";
             }
             else                                                            //下载失败，换源重试
             {
-                if (DownProgressFile(VerURLb + SelectVer + @"\" + SelectVer + ".jar", SelectDown + SelectVer + ".jar", VerGridView.Rows[RowNum].Cells[3]))//下载成功
+                if (DownProgressFile(VerURLb + SelectVer + "/" + SelectVer + ".jar", SelectDown + SelectVer + ".jar", VerGridView.Rows[RowNum].Cells[3]))//下载成功
                 {
                     VerGridView.Rows[RowNum].Cells[3].Value = "JAR下载完成！";
                 }
