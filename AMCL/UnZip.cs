@@ -1,141 +1,100 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Packaging;
 using System.Reflection;
+using System.Windows.Forms;
+
 namespace UnZipApp
 {
-    public class ZIP : IDisposable
+    class ZIP : IDisposable
     {
-        private object zipPackage;
-
-        private ZIP(object zPackage)
-        {
-            zipPackage = zPackage;
-        }
-
+        private object external;
+        private ZIP() { }
         public static ZIP OpenOnFile(string path)
         {
-            Type type = typeof(System.IO.Packaging.Package).Assembly.GetType("MS.Internal.IO.Zip.ZipArchive");
-            var method = type.GetMethod("OpenOnFile", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            return new ZIP(method.Invoke(null, new object[] { path, FileMode.Open, FileAccess.Read, FileShare.Read, false }));
+            FileMode mode = FileMode.Open;
+            FileAccess access = FileAccess.Read;
+            FileShare share = FileShare.Read;
+            bool streaming = false;
+            var type = typeof(Package).Assembly.GetType("MS.Internal.IO.Zip.ZipArchive");
+            var meth = type.GetMethod("OpenOnFile", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            return new ZIP { external = meth.Invoke(null, new object[] { path, mode, access, share, streaming }) };
         }
-
-        public IEnumerable<ZipFile> Files
+        public void Dispose()
+        {
+            ((IDisposable)external).Dispose();
+        }
+        public IEnumerable<ZipFileInfo> Files
         {
             get
             {
-                var method = zipPackage.GetType().GetMethod("GetFiles", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                var zipFiles = method.Invoke(zipPackage, null) as System.Collections.IEnumerable;
-                foreach (var file in zipFiles)
-                {
-                    yield return new ZipFile(file);
-                }
+                var meth = external.GetType().GetMethod("GetFiles", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                var coll = meth.Invoke(external, null) as System.Collections.IEnumerable;
+                foreach (var p in coll) yield return new ZipFileInfo { external = p };
+            }
+        }
+        public struct ZipFileInfo
+        {
+            internal object external;
+            private object GetProperty(string name)
+            {
+                return external.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).GetValue(external, null);
+            }
+            public string Name
+            {
+                get { return GetProperty("Name").ToString(); }
+            }
+            public Stream GetStream()
+            {
+                FileMode mode = FileMode.Open;
+                FileAccess access = FileAccess.Read;
+                var meth = external.GetType().GetMethod("GetStream", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                return (Stream)meth.Invoke(external, new object[] { mode, access });
             }
         }
 
         /// <summary>
-        /// 解压并更新文件
+        /// Zip解压并更新目标文件
         /// </summary>
-        /// <param name="zipPath">ZIP压缩包路径</param>
-        /// <param name="destFolder">解压到目录</param>
-        public static void UnZip(string zipPath, string destFolder)
+        /// <param name="ZipFile">Zip压缩包路径</param>
+        /// <param name="UnZipDir">解压目标路径</param>
+        /// <returns></returns>
+        public static bool UnZip(String ZipFile, String UnZipDir)
         {
-            if (!Directory.Exists(destFolder))
+            UnZipDir = UnZipDir.EndsWith(@"\") ? UnZipDir : UnZipDir + @"\";
+            try
             {
-                Directory.CreateDirectory(destFolder);
-            }
-            using (var zip = ZIP.OpenOnFile(zipPath))
-            {
-                string rootFolder = destFolder;
-                foreach (var file in zip.Files)
+                using (var zipfile = ZIP.OpenOnFile(ZipFile))
                 {
-                    if (file.Name.EndsWith("/"))
+                    foreach (var file in zipfile.Files)
                     {
-                        string[] folders = file.Name.Split('/');
-                        rootFolder = destFolder;
-                        for (int i = 0; i < folders.Length; i++)
+                        if (!file.Name.EndsWith("/"))
                         {
-                            if (!Directory.Exists(Path.Combine(rootFolder, folders[i])))
-                            {
-                                Directory.CreateDirectory(Path.Combine(rootFolder, folders[i]));
-                            }
-                            rootFolder = Path.Combine(rootFolder, folders[i]);
-                        }
-                    }
-                }
-                foreach (var file in zip.Files)
-                {
-                    if (!file.Name.EndsWith("/"))
-                    {
-                        string contentFilePath = Path.Combine(destFolder, file.Name);
-                        try
-                        {
+                            string FilePath = UnZipDir + file.Name.Replace("/", @"\");  //设置解压路径
+                            MessageBox.Show(FilePath);
+                            string GreatFolder = FilePath.Substring(0, FilePath.LastIndexOf(@"\"));
+                            if (!Directory.Exists(GreatFolder)) Directory.CreateDirectory(GreatFolder);
                             byte[] content = new byte[file.GetStream().Length];
                             file.GetStream().Read(content, 0, content.Length);
-                            if (File.Exists(contentFilePath))   //跳过相同的文件，否则覆盖
+                            if (File.Exists(FilePath))                      //跳过相同的文件，否则覆盖更新
                             {
-                                if (content.Length == new FileInfo(contentFilePath).Length) continue;
+                                if (content.Length == new FileInfo(FilePath).Length) continue;
                             }
                             else
                             {
-                                File.WriteAllBytes(contentFilePath, content);
-                            }
-                        }
-                        catch (DirectoryNotFoundException e)
-                        {
-                            string[] folders = file.Name.Split('/');
-                            rootFolder = destFolder;
-                            for (int i = 0; i < folders.Length - 1; i++)
-                            {
-                                if (!Directory.Exists(Path.Combine(rootFolder, folders[i])))
-                                {
-                                    Directory.CreateDirectory(Path.Combine(rootFolder, folders[i]));
-                                }
-                                rootFolder = Path.Combine(rootFolder, folders[i]);
-                            }
-                            byte[] content = new byte[file.GetStream().Length];
-                            file.GetStream().Read(content, 0, content.Length);
-                            if (File.Exists(contentFilePath))   //跳过相同的文件
-                            {
-                                if (content.Length == new FileInfo(contentFilePath).Length) continue;
-                            }
-                            else
-                            {
-                                File.WriteAllBytes(contentFilePath, content);
+                                File.WriteAllBytes(FilePath, content);
                             }
                         }
                     }
                 }
+                return true;
             }
-        }
-
-        public void Dispose()
-        {
-            ((IDisposable)zipPackage).Dispose();
-        }
-    }
-
-    public class ZipFile
-    {
-        internal object zipFile;
-
-        public ZipFile(object zfile)
-        {
-            zipFile = zfile;
-        }
-
-        private object GetProperty(string name)
-        {
-            return zipFile.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).GetValue(zipFile, null);
-        }
-        public string Name
-        {
-            get { return (string)GetProperty("Name"); }
-        }
-        public Stream GetStream(FileMode mode = FileMode.Open, FileAccess access = FileAccess.Read)
-        {
-            var meth = zipFile.GetType().GetMethod("GetStream", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            return (Stream)meth.Invoke(zipFile, new object[] { mode, access });
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return false;
+            }
         }
     }
 }

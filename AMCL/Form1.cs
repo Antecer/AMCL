@@ -1093,13 +1093,15 @@ namespace AMCL
         {
             downLoadUrl = downLoadUrl.Replace(@"\", "/");
             savePathName = savePathName.Replace("/", @"\");
+            string cachePath = Environment.GetFolderPath(Environment.SpecialFolder.InternetCache);//获取IE临时目录(作为下载缓存使用)
+            cachePath = cachePath + savePathName.Remove(0, savePathName.LastIndexOf(@"\"));
             HttpWebRequest request = null;
             try
             {
                 request = (HttpWebRequest)HttpWebRequest.Create(downLoadUrl);//根据URL获取远程文件流
                 HttpWebResponse response = (HttpWebResponse)request.GetResponse();
                 Stream sr = response.GetResponseStream();
-                Stream sw = new FileStream(savePathName, FileMode.Create);//创建本地文件写入流
+                Stream sw = new FileStream(cachePath, FileMode.Create);//创建本地文件写入流
 
                 Decimal WebFileBytes = response.ContentLength;
                 Decimal DownloadByte = 0;
@@ -1113,6 +1115,7 @@ namespace AMCL
                 }
                 sw.Close();
                 sr.Close();
+                File.Move(cachePath, savePathName);
                 return true;
             }
             catch (Exception)
@@ -1354,14 +1357,15 @@ namespace AMCL
         /// 带进度输出的Http文件下载
         /// </summary>
         /// <param name="downLoadUrl">文件的url路径</param>
-        /// <param name="saveFullName">需要保存在本地的路径(包含文件名)</param>
+        /// <param name="savePathName">需要保存在本地的路径(包含文件名)</param>
         /// <param name="Progress">这里加入需要输出进度的容器（如TextBox）</param>
         /// <returns></returns>
-        public bool DownProgressFile(string downLoadUrl, string saveFullName, DataGridViewCell Progress)
+        public bool DownProgressFile(string downLoadUrl, string savePathName, DataGridViewCell Progress)
         {
             downLoadUrl = downLoadUrl.Replace(@"\", "/");
-            saveFullName = saveFullName.Replace("/", @"\");
-            bool flagDown = false;
+            savePathName = savePathName.Replace("/", @"\");
+            string cachePath = Environment.GetFolderPath(Environment.SpecialFolder.InternetCache);//获取IE临时目录(作为下载缓存使用)
+            cachePath = cachePath + savePathName.Remove(0, savePathName.LastIndexOf(@"\"));
             HttpWebRequest httpWebRequest = null;
             try
             {
@@ -1370,7 +1374,7 @@ namespace AMCL
                 HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
                 long totalBytes = httpWebResponse.ContentLength;
                 Stream sr = httpWebResponse.GetResponseStream();
-                Stream sw = new FileStream(saveFullName, FileMode.Create);//创建本地文件写入流
+                Stream sw = new FileStream(cachePath, FileMode.Create);//创建本地文件写入流
 
                 long totalDownloadedByte = 0;
                 byte[] by = new byte[1024];
@@ -1384,15 +1388,16 @@ namespace AMCL
                     Progress.Value = percent.ToString("0.0%");      //将下载进度导出到指定容器
                     osize = sr.Read(by, 0, (int)by.Length);
                 }
-                flagDown = true;
                 sw.Close();
                 sr.Close();
+                File.Move(cachePath, savePathName);
+                return true;
             }
             catch (Exception)
             {
                 if (httpWebRequest != null) httpWebRequest.Abort();
+                return false;
             }
-            return flagDown;
         }
         /// <summary>
         /// 下载指定的游戏版本
