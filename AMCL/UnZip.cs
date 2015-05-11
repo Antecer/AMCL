@@ -72,7 +72,6 @@ namespace UnZipApp
                         if (!file.Name.EndsWith("/"))
                         {
                             string FilePath = UnZipDir + file.Name.Replace("/", @"\");  //设置解压路径
-                            MessageBox.Show(FilePath);
                             string GreatFolder = FilePath.Substring(0, FilePath.LastIndexOf(@"\"));
                             if (!Directory.Exists(GreatFolder)) Directory.CreateDirectory(GreatFolder);
                             byte[] content = new byte[file.GetStream().Length];
