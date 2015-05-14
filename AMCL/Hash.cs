@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace AMCL
 {
-    public class Hash
+    class Hash
     {
         /// <summary>
         /// 文件SHA1校验

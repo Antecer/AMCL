@@ -5,13 +5,34 @@ using System.IO.Packaging;
 using System.Reflection;
 using System.Windows.Forms;
 
-namespace UnZipApp
+namespace ZipArchive
 {
     class ZIP : IDisposable
     {
         private object external;
         private ZIP() { }
-        public static ZIP OpenOnFile(string path)
+
+        //重写System.Text.ASCIIEncoding派生类
+        public sealed class FakeAsciiEncoding : System.Text.ASCIIEncoding
+        {
+            private readonly System.Text.Encoding encoding;
+
+            public FakeAsciiEncoding(System.Text.Encoding encoding)
+            {
+                this.encoding = encoding;
+            }
+
+            public override byte[] GetBytes(string s)
+            {
+                return this.encoding.GetBytes(s);
+            }
+
+            public override string GetString(byte[] bytes)
+            {
+                return this.encoding.GetString(bytes);
+            }
+        }
+        public static ZIP OpenOnFile(string path, System.Text.Encoding Recoding)
         {
             FileMode mode = FileMode.Open;
             FileAccess access = FileAccess.Read;
@@ -19,7 +40,13 @@ namespace UnZipApp
             bool streaming = false;
             var type = typeof(Package).Assembly.GetType("MS.Internal.IO.Zip.ZipArchive");
             var meth = type.GetMethod("OpenOnFile", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            return new ZIP { external = meth.Invoke(null, new object[] { path, mode, access, share, streaming }) };
+
+            var external = meth.Invoke(null, new object[] { path, mode, access, share, streaming });
+            FieldInfo blockManagerField = type.GetField("_blockManager", BindingFlags.Instance | BindingFlags.NonPublic);
+            object blockManager = blockManagerField.GetValue(external);
+            FieldInfo encodingField = blockManager.GetType().GetField("_encoding", BindingFlags.Instance | BindingFlags.NonPublic);
+            encodingField.SetValue(blockManager, new FakeAsciiEncoding(Recoding));//使用指定的编码读取字段
+            return new ZIP { external = external };
         }
         public void Dispose()
         {
@@ -43,7 +70,7 @@ namespace UnZipApp
             }
             public string Name
             {
-                get { return GetProperty("Name").ToString(); }
+                get { return (string)GetProperty("Name"); }
             }
             public Stream GetStream()
             {
@@ -62,10 +89,10 @@ namespace UnZipApp
         /// <returns></returns>
         public static bool UnZip(String ZipFile, String UnZipDir)
         {
-            UnZipDir = UnZipDir.EndsWith(@"\") ? UnZipDir : UnZipDir + @"\";
             try
             {
-                using (var zipfile = ZIP.OpenOnFile(ZipFile))
+                UnZipDir = UnZipDir.EndsWith(@"\") ? UnZipDir : UnZipDir + @"\";
+                using (var zipfile = ZIP.OpenOnFile(ZipFile, System.Text.Encoding.GetEncoding("GB2312")))
                 {
                     foreach (var file in zipfile.Files)
                     {

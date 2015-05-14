@@ -11,7 +11,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using UnZipApp;
+using ZipArchive;
 
 namespace AMCL
 {
@@ -148,6 +148,15 @@ namespace AMCL
         {
             AMCL_Update();  //启动软件更新程序
             LoadConfig();   //载入配置文件
+        }
+
+        //主窗口第一次显示的时候触发
+        //窗体样式设计
+        private void AMCL_Shown(object sender, EventArgs e)
+        {
+            StartPanel.BackColor = Color.FromArgb(0, 200, 200, 200);//启动面板背景色
+            SetPanel.BackColor = Color.FromArgb(100, 200, 200, 200);//设置面板背景色
+            AssetPanel.BackColor = Color.FromArgb(0, 200, 200, 200);//资源面板背景色
         }
 
         #region ini配置文件读写函数
@@ -357,7 +366,6 @@ namespace AMCL
         {
             StartPanel.Visible = false;
             SetPanel.Visible = true;
-            SetPanel.BackColor = Color.FromArgb(100, 200, 200, 200);//面板背景色
         }
         //打开游戏文件夹
         private void OpenFolder_Click(object sender, EventArgs e)
@@ -386,7 +394,6 @@ namespace AMCL
                 Initializer();
                 StartPanel.Visible = false;
                 SetPanel.Visible = true;
-                SetPanel.BackColor = Color.FromArgb(100, 200, 200, 200);//面板背景色
             }
             SetConfig("read");
             getGameList();
