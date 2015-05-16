@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Windows.Forms;
 
-namespace AMCL
+namespace GetHash
 {
     class Hash
     {
@@ -12,7 +12,7 @@ namespace AMCL
         /// </summary>
         /// <param name="pathName">文件路径（包括文件名）</param>
         /// <returns>文件SHA1码</returns>
-        public static string GetSHA1Hash(string pathName)
+        public static string GetFileSHA1(string pathName)
         {
             string strResult = "";
             string strHashData = "";
@@ -41,7 +41,7 @@ namespace AMCL
         /// </summary>
         /// <param name="pathName">文件路径（包括文件名）</param>
         /// <returns>MD5校验码</returns>
-        public static string GetMd5Hash(string pathName)
+        public static string GetFileMd5(string pathName)
         {
             string strResult = "";
             string strHashData = "";
@@ -63,6 +63,25 @@ namespace AMCL
                 MessageBox.Show(ex.Message);
             }
             return strResult;
+        }
+
+        /// <summary>
+        /// 字符串转MD5
+        /// </summary>
+        /// <param name="str">要转换的字符串</param>
+        /// <returns>返回MD5值</returns>
+        public static string StringToMD5(string str)
+        {
+            byte[] data = System.Text.Encoding.GetEncoding("UTF-8").GetBytes(str);
+            MD5 md5 = new MD5CryptoServiceProvider();
+            byte[] OutBytes = md5.ComputeHash(data);
+            string OutString = "";
+            for (int i = 0; i < OutBytes.Length; i++)
+            {
+                OutString += OutBytes[i].ToString("x2");
+            }
+            // return OutString.ToUpper();
+            return OutString.ToLower();
         }
     }
 }

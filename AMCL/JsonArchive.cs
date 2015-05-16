@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
+using System.Text;
 
-namespace AMCL
+namespace JsonArchive
 {
     public class J2D
     {
@@ -19,6 +20,23 @@ namespace AMCL
             {
                 //将指定的 JSON 字符串转换为 Dictionary<string, object> 类型的对象
                 return jss.Deserialize<Dictionary<string, object>>(jsonData);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+    }
+
+    public class D2J
+    {
+        public static string DictionaryToJson(Dictionary<string, object> dictionary)
+        {
+            //实例化JavaScriptSerializer类的新实例
+            JavaScriptSerializer jss = new JavaScriptSerializer();
+            try
+            {
+                return jss.Serialize(dictionary);
             }
             catch (Exception ex)
             {

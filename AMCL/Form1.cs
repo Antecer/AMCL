@@ -1,4 +1,5 @@
-﻿using System;
+﻿using JsonArchive;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +13,9 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using ZipArchive;
+using MineCraftLogin;
+using ProfileSet;
+using GetHash;
 
 namespace AMCL
 {
@@ -41,6 +45,14 @@ namespace AMCL
         String VerName = "";    //版本名称
         String JavaDir = "";    //Java地址
         String VerAssets = "";  //资源版本
+        String screenSize = ""; //窗口尺寸
+        #endregion
+        #region 正版验证
+        String accessToken = "";
+        String clientToken = "";
+        String playerUUID = "";
+        String userName = "";
+        String passWord = "";
         #endregion
 
         #region CMD启动程序的函数
@@ -325,14 +337,20 @@ namespace AMCL
                 ConfigSet.PerformClick();
                 return;
             }
-            if (UserName.Text == "")
+            if ((PassWord.Enabled == false) && (UserName.Text.Length < 3))
             {
-                MessageBox.Show("用户名不存在！");
+                MessageBox.Show("用户名无效！");
                 ConfigSet.PerformClick();
                 UserName.Focus();
                 return;
             }
-             
+            if ((PassWord.Enabled == true) && (UserName.Text.IndexOf("@") < 1))
+            {
+                MessageBox.Show("邮箱地址无效！");
+                ConfigSet.PerformClick();
+                UserName.Focus();
+                return;
+            }
             if (VerList.Items.Count > 0)
             {
                 WriteIni("玩家配置", "游戏版本", VerList.SelectedItem.ToString());
@@ -342,7 +360,7 @@ namespace AMCL
                 string profiles = GameFile.Text + @"\launcher_profiles.json";//添加启动信息文件，若不存在
                 if (!File.Exists(profiles))
                 {
-                    string profilesTxt = "{\r\n  \"profiles\": {\r\n    \"MClauncher\": {\r\n      \"name\": \"MClauncher\",\r\n    },\r\n    \"(Default)\": {\r\n      \"name\": \"(MClauncher)\"\r\n    }\r\n  },\r\n  \"selectedProfile\": \"(Default)\",\r\n  \"clientToken\": \"88888888-8888-8888-8888-888888888888\"\r\n}\r\n";
+                    string profilesTxt = "{\n  \"clientToken\": \"\",\n  \"launcherVersion\": {\n    \"name\": \"1.6.11\",\n    \"format\": 17\n  }\n}"; 
                     File.WriteAllText(profiles, profilesTxt);
                 }
 
@@ -425,7 +443,7 @@ namespace AMCL
             ScreenSize.Text = "默认大小";
 
             UserName.Text = "";
-            PassWorld.Text = "";
+            PassWord.Text = "";
             Registered.Checked = false;
             SetConfig("write");
             WriteIni("玩家配置","游戏版本","");
@@ -690,17 +708,19 @@ namespace AMCL
         //正版登陆选项
         private void Registered_Click(object sender, EventArgs e)
         {
-            if (PassWorld.Enabled == true)
+            if (PassWord.Enabled == true)
             {
+                labelName.Text = "用户名称";
                 Registered.Checked = false;
-                PassWorld.Enabled = false;
-                PassWorld.BackColor = Color.Lavender;
+                PassWord.Enabled = false;
+                PassWord.BackColor = Color.Lavender;
             }
             else
             {
+                labelName.Text = "注册邮箱";
                 Registered.Checked = true;
-                PassWorld.Enabled = true;
-                PassWorld.BackColor = Color.WhiteSmoke;
+                PassWord.Enabled = true;
+                PassWord.BackColor = Color.WhiteSmoke;
             }
         }
         /// <summary>
@@ -838,18 +858,20 @@ namespace AMCL
                 JavaSolt.Value = Convert.ToUInt32(ReadIni("系统设置", "Java内存"));
                 JavaFile.Text = ReadIni("系统设置", "Java路径");
                 UserName.Text = ReadIni("玩家配置", "用户名称");
-                PassWorld.Text = ReadIni("玩家配置", "登录密码");
+                PassWord.Text = ReadIni("玩家配置", "登录密码");
                 if (ReadIni("玩家配置", "正版登陆") == "True")
                 {
+                    labelName.Text = "注册邮箱";
                     Registered.Checked = true;
-                    PassWorld.Enabled = true;
-                    PassWorld.BackColor = Color.WhiteSmoke;
+                    PassWord.Enabled = true;
+                    PassWord.BackColor = Color.WhiteSmoke;
                 }
                 else
                 {
+                    labelName.Text = "用户名称";
                     Registered.Checked = false;
-                    PassWorld.Enabled = false;
-                    PassWorld.BackColor = Color.Lavender;
+                    PassWord.Enabled = false;
+                    PassWord.BackColor = Color.Lavender;
                 }
                 ScreenSize.Text = ReadIni("玩家配置", "游戏尺寸");
                 if (ScreenSize.Text == "") ScreenSize.Text = "默认大小";
@@ -860,7 +882,7 @@ namespace AMCL
                 WriteIni("系统设置", "Java内存",JavaSolt.Value.ToString());
                 WriteIni("系统设置", "Java路径",JavaFile.Text);
                 WriteIni("玩家配置", "用户名称",UserName.Text);
-                WriteIni("玩家配置", "登录密码",PassWorld.Text);
+                WriteIni("玩家配置", "登录密码",PassWord.Text);
                 WriteIni("玩家配置", "正版登陆", Registered.Checked.ToString());
                 WriteIni("玩家配置", "游戏尺寸", ScreenSize.Text);
             }
@@ -870,22 +892,66 @@ namespace AMCL
         #region 启动游戏前的准备工作
         private void Game_Start()
         {
-            strRun = GetRunStr();       //获取游戏启动参数(这一步已获取到资源文件版本号)
-            VerName = VerList.SelectedItem.ToString();  //获取当前选定的游戏版本名称
-            JavaDir = JavaFile.Text;    //获取Java路径
-
-            ReadUpdateFile(VerName);//获取更新配置
+            userName = UserName.Text;                   //获取用户名
+            passWord = PassWord.Text;                   //获取用户密码
+            screenSize = ScreenSize.Text;               //设置窗口尺寸
 
             if (VerList.Items.Count < 1) return;
+            VerName = VerList.SelectedItem.ToString();  //获取当前选定的游戏版本名称
+            JavaDir = JavaFile.Text;                    //获取Java路径
+            ReadUpdateFile(VerName);                    //获取更新配置
+
             Thread InspectGame = new Thread(new ThreadStart(GameCheck));//创建一个新线程来检测游戏完整性
             InspectGame.IsBackground = true;    //设置此线程为后台线程
             InspectGame.Start();                //启动线程
         }
         /// <summary>
-        /// 游戏文件完整性检查
+        /// 游戏配置检查
         /// </summary>
         private void GameCheck()
         {
+            if (PassWord.Enabled == true)  //正版登陆验证
+            {
+                InfoAdd(true, "正在进行正版验证...\n", Color.DarkGreen);
+                String LoginJson = Login.login(userName, passWord, clientToken);
+                if (LoginJson == "false")
+                {
+                    MessageBox.Show("登陆失败！");
+                    CloseInfoPanel();
+                    return;
+                }
+                else
+                {
+                    InfoAdd(true, "正版验证成功！\n", Color.DarkGreen);
+                }
+                var LoginData = J2D.JsonToDictionary(LoginJson);
+                var Profile = (Dictionary<string, object>)LoginData["selectedProfile"];
+
+                var AuthData = new Profile.authenticationDatabase();
+                AuthData.displayName = Profile["name"].ToString();;
+                AuthData.accessToken = LoginData["accessToken"].ToString();
+                AuthData.uuid = Profile["id"].ToString();
+                AuthData.username = userName;
+                var Profiles = new Profile.profiles();
+                Profiles.gameDir = GameDir;
+                Profiles.lastVersionId = VerName;
+                Profiles.resolution = screenSize;
+                ProfileSet.Profile.ProfilesSave(Profiles, AuthData, LoginData["clientToken"].ToString());
+
+                accessToken = LoginData["accessToken"].ToString();
+                clientToken = LoginData["clientToken"].ToString();
+                playerUUID = Profile["id"].ToString();
+                userName = Profile["name"].ToString();
+            }
+            else
+            {
+                accessToken = "0";
+                clientToken = "0";
+                playerUUID = "0";
+                userName = UserName.Text;
+            }
+
+            strRun = GetRunStr();       //获取游戏启动参数(这一步已获取到资源文件版本号)
             if (UpdateAuto.Checked == true) ModUpdateLine();
             LibCheck();                 //检查运行库是否有完整
             try
@@ -1053,7 +1119,7 @@ namespace AMCL
                 String AssetFile = GameDir + @"\assets\objects\" + AssetHash.Substring(0, 2) + @"\" + AssetHash;
                 if (File.Exists(AssetFile)) //判断资源文件是否存在
                 {
-                    if (Hash.GetSHA1Hash(AssetFile) == AssetHash) continue;
+                    if (Hash.GetFileSHA1(AssetFile) == AssetHash) continue;
                     else File.Delete(AssetFile);
                 }
                 InfoAdd(true, "下载assets：" + AssetHash, Color.BlueViolet);
@@ -1131,47 +1197,14 @@ namespace AMCL
                 return false;
             }
         }
-
-        /// <summary>
-        /// 文件MD5校验
-        /// </summary>
-        /// <param name="pathName">文件路径（包括文件名）</param>
-        /// <returns>MD5校验码</returns>
-        private string GetMd5Hash(string pathName)
-        {
-            string strResult = "";
-            string strHashData = "";
-            byte[] arrbytHashValue;
-            FileStream oFileStream = null;
-            MD5CryptoServiceProvider oMD5Hasher = new MD5CryptoServiceProvider();
-            try
-            {
-                oFileStream = new FileStream(pathName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                arrbytHashValue = oMD5Hasher.ComputeHash(oFileStream); //计算指定Stream 对象的哈希值
-                oFileStream.Close();
-                //由以连字符分隔的十六进制对构成的String，其中每一对表示value 中对应的元素；例如“F-2C-4A”
-                strHashData = BitConverter.ToString(arrbytHashValue);
-                //删除-
-                strHashData = strHashData.Replace("-", "");
-                strResult = strHashData;
-            }
-            catch (System.Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-            return strResult;
-        }
         #endregion
 
         #region 构建启动参数
         private string GetRunStr()
         {
-            if (VerList.Items.Count < 1) return "";
-            String VerName = VerList.SelectedItem.ToString();   //获取选定的版本名称
             String StartPath = GameFile.Text + @"\versions\" + VerName + @"\" + VerName + ".jar";//主程序地址
             String NativesPath = GameFile.Text + @"\natives";//
             String JsonPath = GameFile.Text + @"\versions\" + VerName + @"\" + VerName + ".json"; //获取JSON文件地址
-
 
             String RunStr = null;                       //定义启动参数字符串
             String LibList = null;                      //定义启动运行库字符串
@@ -1211,27 +1244,31 @@ namespace AMCL
             if (JSON.ContainsKey("assets")) VerAssets = JSON["assets"].ToString();  //获取资源文件版本
             else VerAssets = "old";
             var Arguments = new StringBuilder(JSON["minecraftArguments"].ToString());//定义启动参数字符串
-            Arguments.Replace("${auth_player_name}", UserName.Text);//用户名
+            Arguments.Replace("${auth_player_name}", userName);//用户名
             Arguments.Replace("${version_name}", VerName);          //游戏版本号
-            //Arguments.Replace("${game_directory}", "\"" + GameFile.Text + @"\versions\" + VerName + "\"");//游戏目录
             Arguments.Replace("${game_directory}", "\"" + GameFile.Text + @"\versions\" + VerName + "\"");
             Arguments.Replace("${game_assets}", "\"" + GameFile.Text + "\\assets\""); //资源文件目录
             Arguments.Replace("${assets_root}", "\"" + GameFile.Text + "\\assets\"");
             Arguments.Replace("${assets_index_name}", VerAssets);   //资源文件版本
-            Arguments.Replace("${auth_uuid}", "0");                 //
-            Arguments.Replace("${auth_access_token}", "0");         //
+            Arguments.Replace("${auth_uuid}", playerUUID);                 //
+            Arguments.Replace("${auth_access_token}", accessToken);         //
             Arguments.Replace("${user_properties}", "{}");
             Arguments.Replace("${user_type}", "Legacy");
 
+            if (accessToken != "")//正版登陆加入Session参数
+            {
+                Arguments.Replace("--version", "--session " + accessToken + " --version");
+            }
+
             if ((!Arguments.ToString().Contains("--width"))||(!Arguments.ToString().Contains("--fullscreen")))//设置游戏窗口大小
             {
-                if (ScreenSize.Text == "FullScreen")
+                if (screenSize == "FullScreen")
                 {
                     Arguments.Append(" --fullscreen");
                 }
-                else if (ScreenSize.Text.Contains("*"))
+                else if (screenSize.Contains("*"))
                 {
-                    String[] gamesize = ScreenSize.Text.Trim().Split('*');
+                    String[] gamesize = screenSize.Trim().Split('*');
                     Arguments.Append(" --width " + gamesize[0].Trim());
                     Arguments.Append(" --height " + gamesize[1].Trim());
                 }
@@ -1685,13 +1722,13 @@ namespace AMCL
                         String fileHash = Subitem["hash"].ToString();
                         if (File.Exists(filePath))
                         {
-                            if (fileHash == Hash.GetSHA1Hash(filePath)) continue;
+                            if (fileHash == Hash.GetFileSHA1(filePath)) continue;
                             File.Delete(filePath);
                         }
                         InfoAdd(true, "正在更新" + Subitem["name"].ToString(), Color.Black);
                         if (CheckDownLoad(Subitem["url"].ToString(), filePath))
                         {
-                            if (fileHash == Hash.GetSHA1Hash(filePath)) InfoAdd(false, "√\n", Color.Green);
+                            if (fileHash == Hash.GetFileSHA1(filePath)) InfoAdd(false, "√\n", Color.Green);
                             else
                             {
                                 InfoAdd(false, "×\n", Color.Red);
@@ -1716,13 +1753,13 @@ namespace AMCL
                         String modHash = Subitem["hash"].ToString();
                         if (File.Exists(modPath))
                         {
-                            if (modHash == Hash.GetSHA1Hash(modPath)) continue;
+                            if (modHash == Hash.GetFileSHA1(modPath)) continue;
                             File.Delete(modPath);
                         }
                         InfoAdd(true, "正在更新" + Subitem["name"], Color.Black);
                         if (CheckDownLoad(Subitem["url"].ToString(), modPath))
                         {
-                            if (modHash == Hash.GetSHA1Hash(modPath)) InfoAdd(false, "√\n", Color.Green);
+                            if (modHash == Hash.GetFileSHA1(modPath)) InfoAdd(false, "√\n", Color.Green);
                             else
                             {
                                 InfoAdd(false, "×\n", Color.Red);
@@ -1754,12 +1791,12 @@ namespace AMCL
                         String configHash = Subitem["hash"].ToString();
                         if (File.Exists(configPath))
                         {
-                            if (configHash == Hash.GetSHA1Hash(configPath)) continue;
+                            if (configHash == Hash.GetFileSHA1(configPath)) continue;
                         }
                         InfoAdd(true, "正在更新" + Subitem["name"], Color.Black);
                         if (CheckDownLoad(Subitem["url"].ToString(), configPath))
                         {
-                            if (configHash == Hash.GetSHA1Hash(configPath)) InfoAdd(false, "√\n", Color.Green);
+                            if (configHash == Hash.GetFileSHA1(configPath)) InfoAdd(false, "√\n", Color.Green);
                             else
                             {
                                 InfoAdd(false, "×\n", Color.Red);
@@ -1835,5 +1872,6 @@ namespace AMCL
             }
         }
         #endregion
+
     }
 }

@@ -59,9 +59,9 @@
             this.label8 = new System.Windows.Forms.Label();
             this.Registered = new System.Windows.Forms.RadioButton();
             this.label2 = new System.Windows.Forms.Label();
-            this.PassWorld = new System.Windows.Forms.MaskedTextBox();
+            this.PassWord = new System.Windows.Forms.MaskedTextBox();
             this.UserName = new System.Windows.Forms.MaskedTextBox();
-            this.label1 = new System.Windows.Forms.Label();
+            this.labelName = new System.Windows.Forms.Label();
             this.鼠标右键菜单 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.更改版本名称ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.删除选中版本ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -458,9 +458,9 @@
             this.PlayerSet.Controls.Add(this.label8);
             this.PlayerSet.Controls.Add(this.Registered);
             this.PlayerSet.Controls.Add(this.label2);
-            this.PlayerSet.Controls.Add(this.PassWorld);
+            this.PlayerSet.Controls.Add(this.PassWord);
             this.PlayerSet.Controls.Add(this.UserName);
-            this.PlayerSet.Controls.Add(this.label1);
+            this.PlayerSet.Controls.Add(this.labelName);
             this.PlayerSet.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.PlayerSet.ForeColor = System.Drawing.Color.Black;
             this.PlayerSet.Location = new System.Drawing.Point(178, 10);
@@ -505,7 +505,7 @@
             // 
             this.Registered.AutoSize = true;
             this.Registered.BackColor = System.Drawing.Color.Transparent;
-            this.Registered.Location = new System.Drawing.Point(217, 49);
+            this.Registered.Location = new System.Drawing.Point(226, 22);
             this.Registered.Name = "Registered";
             this.Registered.Size = new System.Drawing.Size(95, 16);
             this.Registered.TabIndex = 6;
@@ -526,15 +526,15 @@
             this.label2.TabIndex = 3;
             this.label2.Text = "登陆密码";
             // 
-            // PassWorld
+            // PassWord
             // 
-            this.PassWorld.BackColor = System.Drawing.Color.Lavender;
-            this.PassWorld.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.PassWorld.Enabled = false;
-            this.PassWorld.Location = new System.Drawing.Point(77, 47);
-            this.PassWorld.Name = "PassWorld";
-            this.PassWorld.Size = new System.Drawing.Size(120, 21);
-            this.PassWorld.TabIndex = 2;
+            this.PassWord.BackColor = System.Drawing.Color.Lavender;
+            this.PassWord.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.PassWord.Enabled = false;
+            this.PassWord.Location = new System.Drawing.Point(77, 47);
+            this.PassWord.Name = "PassWord";
+            this.PassWord.Size = new System.Drawing.Size(120, 21);
+            this.PassWord.TabIndex = 2;
             // 
             // UserName
             // 
@@ -545,17 +545,17 @@
             this.UserName.Size = new System.Drawing.Size(120, 21);
             this.UserName.TabIndex = 1;
             // 
-            // label1
+            // labelName
             // 
-            this.label1.AutoSize = true;
-            this.label1.BackColor = System.Drawing.Color.Transparent;
-            this.label1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.label1.ForeColor = System.Drawing.Color.Black;
-            this.label1.Location = new System.Drawing.Point(18, 24);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(53, 12);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "用户名称";
+            this.labelName.AutoSize = true;
+            this.labelName.BackColor = System.Drawing.Color.Transparent;
+            this.labelName.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.labelName.ForeColor = System.Drawing.Color.Black;
+            this.labelName.Location = new System.Drawing.Point(18, 24);
+            this.labelName.Name = "labelName";
+            this.labelName.Size = new System.Drawing.Size(53, 12);
+            this.labelName.TabIndex = 0;
+            this.labelName.Text = "用户名称";
             // 
             // 鼠标右键菜单
             // 
@@ -1008,9 +1008,9 @@
         private System.Windows.Forms.NumericUpDown JavaSolt;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.MaskedTextBox PassWorld;
+        private System.Windows.Forms.MaskedTextBox PassWord;
         private System.Windows.Forms.MaskedTextBox UserName;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label labelName;
         private System.Windows.Forms.Label SoltLabel;
         private System.Windows.Forms.Button SetGameFile;
         private System.Windows.Forms.MaskedTextBox GameFile;
