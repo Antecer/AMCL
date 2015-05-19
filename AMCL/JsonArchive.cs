@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
-using System.Text;
 
 namespace JsonArchive
 {
@@ -11,10 +10,9 @@ namespace JsonArchive
         /// 将Json数据反序列化为Dictionary字典
         /// </summary>
         /// <param name="jsonData">json数据</param>
-        /// <returns></returns>
+        /// <returns>Dictionary字典</returns>
         public static Dictionary<string, object> JsonToDictionary(string jsonData)
         {
-            //实例化JavaScriptSerializer类的新实例
             JavaScriptSerializer jss = new JavaScriptSerializer();
             try
             {
@@ -27,16 +25,35 @@ namespace JsonArchive
             }
         }
     }
-
     public class D2J
     {
+        /// <summary>
+        /// 将Dictionary字典序列化为Json数据
+        /// </summary>
+        /// <param name="dictionary">Dictionary字典</param>
+        /// <returns>Json数据</returns>
         public static string DictionaryToJson(Dictionary<string, object> dictionary)
         {
-            //实例化JavaScriptSerializer类的新实例
             JavaScriptSerializer jss = new JavaScriptSerializer();
             try
             {
-                return jss.Serialize(dictionary);
+                String Tjson = jss.Serialize(dictionary);
+                Tjson = Tjson.Replace("[{", "[\r{").Replace("}]", "}\r]").Replace("{\"", "{\r\"").Replace("}", "\r}");
+                Tjson = Tjson.Replace("\",", "\",\r").Replace("},", "},\r").Replace("],", "],\r");
+                String linesign = "";
+                for (int n = 0; n < Tjson.Length; n++)
+                {
+                    if (Tjson[n] == '\r' && Tjson[n - 1] == '{') linesign = linesign + "    ";
+                    else if (Tjson[n] == '\r' && Tjson[n - 1] == '[') linesign = linesign + "    ";
+                    else if (Tjson[n] == '\r' && Tjson[n + 1] == ']') linesign = linesign.Remove(0, 4);
+                    else if (Tjson[n] == '\r' && Tjson[n + 1] == '}') linesign = linesign.Remove(0, 4);
+                    if (Tjson[n] == '\r')
+                    {
+                        Tjson = Tjson.Insert(n + 1, "\n" + linesign);
+                        n = n + linesign.Length + 1;
+                    }
+                }
+                return Tjson;
             }
             catch (Exception ex)
             {

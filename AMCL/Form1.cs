@@ -1016,7 +1016,7 @@ namespace AMCL
                 if (File.Exists(libFile)) continue;                 //若文件存在则跳过
 
                 InfoAdd(true, "下载libraries：" + Item["name"], Color.BlueViolet);
-                if (CheckDownLoad(strURL, libFile))             //下载成功
+                if (DownloadFile(strURL, libFile))             //下载成功
                 {
                     InfoAdd(false, "√\n", Color.Green);
                 }
@@ -1024,7 +1024,7 @@ namespace AMCL
                 {
                     if (Item.ContainsKey("url")) strURL = ForgeLibURL + file;
                     else strURL = BMCLLibURL + file;
-                    if (CheckDownLoad(strURL, libFile))         //下载成功
+                    if (DownloadFile(strURL, libFile))         //下载成功
                     {
                         InfoAdd(false, "√\n", Color.Green);
                     }
@@ -1081,7 +1081,7 @@ namespace AMCL
             if (!File.Exists(JsonPath)) //判断目录文件是否存在
             {
                 InfoAdd(true, "未找到对应版本的index.json文件，正在尝试从官方下载\n", Color.BlueViolet);
-                if (CheckDownLoad(IndexsURL + VerAssets + ".json", JsonPath))//下载成功
+                if (DownloadFile(IndexsURL + VerAssets + ".json", JsonPath))//下载成功
                 {
                     InfoAdd(true, "index.json下载成功！\n", Color.Green);
                 }
@@ -1089,7 +1089,7 @@ namespace AMCL
                 {
                     InfoAdd(true, "官方源下载index失败！\n", Color.Red);
                     InfoAdd(true, "尝试从BMCLAPI下载index.json文件\n", Color.BlueViolet);
-                    if (CheckDownLoad(IndexsURLb + VerAssets + ".json", JsonPath))//下载成功
+                    if (DownloadFile(IndexsURLb + VerAssets + ".json", JsonPath))//下载成功
                     {
                         InfoAdd(true, "index.json下载成功！\n", Color.Green);
                     }
@@ -1119,18 +1119,18 @@ namespace AMCL
                 String AssetFile = GameDir + @"\assets\objects\" + AssetHash.Substring(0, 2) + @"\" + AssetHash;
                 if (File.Exists(AssetFile)) //判断资源文件是否存在
                 {
-                    if (Hash.GetFileSHA1(AssetFile) == AssetHash) continue;
+                    if (Hash.FileStrToSHA1(AssetFile) == AssetHash) continue;
                     else File.Delete(AssetFile);
                 }
                 InfoAdd(true, "下载assets：" + AssetHash, Color.BlueViolet);
                 AssetHash = AssetHash.Substring(0, 2) + "/" + AssetHash;
-                if (CheckDownLoad(AssetsURL + AssetHash, AssetFile))//下载成功
+                if (DownloadFile(AssetsURL + AssetHash, AssetFile))//下载成功
                 {
                     InfoAdd(false, "√\n", Color.Green);
                 }
                 else                                                //下载失败,更换BMCLAPI源重试
                 {
-                    if (CheckDownLoad(AssetsURLb + AssetHash, AssetFile))//下载成功
+                    if (DownloadFile(AssetsURLb + AssetHash, AssetFile))//下载成功
                     {
                         InfoAdd(false, "√\n", Color.Green);
                     }
@@ -1140,21 +1140,6 @@ namespace AMCL
                     }
                 }
             }
-        }
-        /// <summary>
-        /// 下载文件并创建指定Path的所有目录和子目录
-        /// </summary>
-        /// <param name="strURL">要下载的文件的地址</param>
-        /// <param name="strFileName">保存到本地的路径（包含文件名）</param>
-        private bool CheckDownLoad(string strURL,string strFileName)
-        {
-            strFileName = strFileName.Replace("/", @"\");
-            string GreatFile = strFileName.Substring(0, strFileName.LastIndexOf(@"\"));
-            if (!Directory.Exists(GreatFile))//创建缺失的库文件目录
-            {
-                Directory.CreateDirectory(GreatFile);
-            }
-            return DownloadFile(strURL, strFileName);
         }
         /// <summary>
         /// http文件下载
@@ -1167,7 +1152,9 @@ namespace AMCL
             downLoadUrl = downLoadUrl.Replace(@"\", "/");
             savePathName = savePathName.Replace("/", @"\");
             string cachePath = Environment.GetFolderPath(Environment.SpecialFolder.InternetCache);//获取IE临时目录(作为下载缓存使用)
-            cachePath = cachePath + savePathName.Remove(0, savePathName.LastIndexOf(@"\"));
+            cachePath = cachePath + savePathName.Remove(0, savePathName.LastIndexOf(@"\"));       //设置下载临时文件
+            String GreatFile = savePathName.Substring(0, savePathName.LastIndexOf(@"\"));         //创建目标存放路径
+            if (!Directory.Exists(GreatFile)) Directory.CreateDirectory(GreatFile);
             HttpWebRequest request = null;
             try
             {
@@ -1188,11 +1175,13 @@ namespace AMCL
                 }
                 sw.Close();
                 sr.Close();
-                File.Move(cachePath, savePathName);
+                File.Delete(savePathName);          //删除旧文件
+                File.Move(cachePath, savePathName); //添加新文件
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                MessageBox.Show(ex.Message);
                 if (request != null) request.Abort();
                 return false;
             }
@@ -1331,10 +1320,10 @@ namespace AMCL
             if (File.Exists(JsonPath)) File.Delete(JsonPath);               //删除旧的版本目录
             VerId = "正在获取";
             VerListAdd();
-            if (CheckDownLoad(VerURL + "versions.json", JsonPath)) { }      //下载成功
+            if (DownloadFile(VerURL + "versions.json", JsonPath)) { }      //下载成功
             else                                                            //下载失败，换源重试
             {
-                if (CheckDownLoad(VerURLb + "versions.json", JsonPath)) { } //下载成功
+                if (DownloadFile(VerURLb + "versions.json", JsonPath)) { } //下载成功
                 else                                                        //下载失败
                 {
                     VerListClear();
@@ -1409,7 +1398,9 @@ namespace AMCL
             downLoadUrl = downLoadUrl.Replace(@"\", "/");
             savePathName = savePathName.Replace("/", @"\");
             string cachePath = Environment.GetFolderPath(Environment.SpecialFolder.InternetCache);//获取IE临时目录(作为下载缓存使用)
-            cachePath = cachePath + savePathName.Remove(0, savePathName.LastIndexOf(@"\"));
+            cachePath = cachePath + savePathName.Remove(0, savePathName.LastIndexOf(@"\"));       //设置下载临时文件
+            String GreatFile = savePathName.Substring(0, savePathName.LastIndexOf(@"\"));         //创建目标存放路径
+            if (!Directory.Exists(GreatFile)) Directory.CreateDirectory(GreatFile);
             HttpWebRequest httpWebRequest = null;
             try
             {
@@ -1434,7 +1425,8 @@ namespace AMCL
                 }
                 sw.Close();
                 sr.Close();
-                File.Move(cachePath, savePathName);
+                File.Delete(savePathName);          //删除旧文件
+                File.Move(cachePath, savePathName); //添加新文件
                 return true;
             }
             catch (Exception)
@@ -1467,6 +1459,11 @@ namespace AMCL
             }
             string SelectDown = GameFile.Text + @"\versions\" + SelectVer + @"\";
             Directory.CreateDirectory(SelectDown);
+            if (File.Exists(SelectDown + SelectVer + ".json") && File.Exists(SelectDown + SelectVer + ".jar"))
+            {
+                MessageBox.Show("指定的游戏版本已存在！");
+                return;
+            }
             if (DownProgressFile(VerURL + SelectVer + "/" + SelectVer + ".json", SelectDown + SelectVer + ".json", VerGridView.Rows[RowNum].Cells[3]))//下载成功
             {
                 VerGridView.Rows[RowNum].Cells[3].Value = "JSON下载完成！";
@@ -1722,13 +1719,13 @@ namespace AMCL
                         String fileHash = Subitem["hash"].ToString();
                         if (File.Exists(filePath))
                         {
-                            if (fileHash == Hash.GetFileSHA1(filePath)) continue;
+                            if (fileHash == Hash.FileStrToSHA1(filePath)) continue;
                             File.Delete(filePath);
                         }
                         InfoAdd(true, "正在更新" + Subitem["name"].ToString(), Color.Black);
-                        if (CheckDownLoad(Subitem["url"].ToString(), filePath))
+                        if (DownloadFile(Subitem["url"].ToString(), filePath))
                         {
-                            if (fileHash == Hash.GetFileSHA1(filePath)) InfoAdd(false, "√\n", Color.Green);
+                            if (fileHash == Hash.FileStrToSHA1(filePath)) InfoAdd(false, "√\n", Color.Green);
                             else
                             {
                                 InfoAdd(false, "×\n", Color.Red);
@@ -1753,13 +1750,13 @@ namespace AMCL
                         String modHash = Subitem["hash"].ToString();
                         if (File.Exists(modPath))
                         {
-                            if (modHash == Hash.GetFileSHA1(modPath)) continue;
+                            if (modHash == Hash.FileStrToSHA1(modPath)) continue;
                             File.Delete(modPath);
                         }
                         InfoAdd(true, "正在更新" + Subitem["name"], Color.Black);
-                        if (CheckDownLoad(Subitem["url"].ToString(), modPath))
+                        if (DownloadFile(Subitem["url"].ToString(), modPath))
                         {
-                            if (modHash == Hash.GetFileSHA1(modPath)) InfoAdd(false, "√\n", Color.Green);
+                            if (modHash == Hash.FileStrToSHA1(modPath)) InfoAdd(false, "√\n", Color.Green);
                             else
                             {
                                 InfoAdd(false, "×\n", Color.Red);
@@ -1791,16 +1788,16 @@ namespace AMCL
                         String configHash = Subitem["hash"].ToString();
                         if (File.Exists(configPath))
                         {
-                            if (configHash == Hash.GetFileSHA1(configPath)) continue;
+                            if (configHash == Hash.FileStrToSHA1(configPath)) continue;
                         }
                         InfoAdd(true, "正在更新" + Subitem["name"], Color.Black);
-                        if (CheckDownLoad(Subitem["url"].ToString(), configPath))
+                        if (DownloadFile(Subitem["url"].ToString(), configPath))
                         {
-                            if (configHash == Hash.GetFileSHA1(configPath)) InfoAdd(false, "√\n", Color.Green);
+                            if (configHash == Hash.FileStrToSHA1(configPath)) InfoAdd(false, "√\n", Color.Green);
                             else
                             {
+                                MessageBox.Show(configHash + "\n" + Hash.FileStrToSHA1(configPath));
                                 InfoAdd(false, "×\n", Color.Red);
-                                File.Delete(configPath);
                             }
                         }
                         else InfoAdd(false, "×\n", Color.Red);
