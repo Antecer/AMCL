@@ -1119,7 +1119,7 @@ namespace AMCL
                 String AssetFile = GameDir + @"\assets\objects\" + AssetHash.Substring(0, 2) + @"\" + AssetHash;
                 if (File.Exists(AssetFile)) //判断资源文件是否存在
                 {
-                    if (Hash.FileStrToSHA1(AssetFile) == AssetHash) continue;
+                    if (Hash.GetFileSHA1(AssetFile) == AssetHash) continue;
                     else File.Delete(AssetFile);
                 }
                 InfoAdd(true, "下载assets：" + AssetHash, Color.BlueViolet);
@@ -1179,9 +1179,8 @@ namespace AMCL
                 File.Move(cachePath, savePathName); //添加新文件
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                MessageBox.Show(ex.Message);
                 if (request != null) request.Abort();
                 return false;
             }
@@ -1725,12 +1724,7 @@ namespace AMCL
                         InfoAdd(true, "正在更新" + Subitem["name"].ToString(), Color.Black);
                         if (DownloadFile(Subitem["url"].ToString(), filePath))
                         {
-                            if (fileHash == Hash.FileStrToSHA1(filePath)) InfoAdd(false, "√\n", Color.Green);
-                            else
-                            {
-                                InfoAdd(false, "×\n", Color.Red);
-                                File.Delete(filePath);
-                            }
+                            InfoAdd(false, "√\n", Color.Green);
                         }
                         else InfoAdd(false, "×\n", Color.Red);
                     }
@@ -1756,12 +1750,7 @@ namespace AMCL
                         InfoAdd(true, "正在更新" + Subitem["name"], Color.Black);
                         if (DownloadFile(Subitem["url"].ToString(), modPath))
                         {
-                            if (modHash == Hash.FileStrToSHA1(modPath)) InfoAdd(false, "√\n", Color.Green);
-                            else
-                            {
-                                InfoAdd(false, "×\n", Color.Red);
-                                File.Delete(modPath);
-                            }
+                            InfoAdd(false, "√\n", Color.Green);
                         }
                         else InfoAdd(false, "×\n", Color.Red);
                     }
@@ -1793,12 +1782,7 @@ namespace AMCL
                         InfoAdd(true, "正在更新" + Subitem["name"], Color.Black);
                         if (DownloadFile(Subitem["url"].ToString(), configPath))
                         {
-                            if (configHash == Hash.FileStrToSHA1(configPath)) InfoAdd(false, "√\n", Color.Green);
-                            else
-                            {
-                                MessageBox.Show(configHash + "\n" + Hash.FileStrToSHA1(configPath));
-                                InfoAdd(false, "×\n", Color.Red);
-                            }
+                            InfoAdd(false, "√\n", Color.Green);
                         }
                         else InfoAdd(false, "×\n", Color.Red);
                     }
