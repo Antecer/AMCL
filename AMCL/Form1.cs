@@ -169,6 +169,14 @@ namespace AMCL
             StartPanel.BackColor = Color.FromArgb(0, 200, 200, 200);//启动面板背景色
             SetPanel.BackColor = Color.FromArgb(100, 200, 200, 200);//设置面板背景色
             AssetPanel.BackColor = Color.FromArgb(0, 200, 200, 200);//资源面板背景色
+            if (ReadIni("背景设置", "BK[640x360]") != "")
+            {
+                this.BackgroundImage = Image.FromFile(ReadIni("背景设置", "BK[640x360]"));
+            }
+            else
+            {
+                WriteIni("背景设置", "BK[640x360]","");
+            }
         }
 
         #region ini配置文件读写函数
