@@ -34,6 +34,7 @@
             this.OpenFolder = new System.Windows.Forms.Button();
             this.StartPanel = new System.Windows.Forms.Panel();
             this.GameStart = new System.Windows.Forms.Button();
+            this.VerList = new ControlEx.ComboBoxEx();
             this.ConfigSet = new System.Windows.Forms.Button();
             this.ClientUpdate = new System.Windows.Forms.Button();
             this.version = new System.Windows.Forms.LinkLabel();
@@ -93,10 +94,9 @@
             this.UpdateAuto = new System.Windows.Forms.CheckBox();
             this.UpdateButton = new System.Windows.Forms.Button();
             this.label7 = new System.Windows.Forms.Label();
+            this.UpdateJsonURL = new ControlEx.TextBoxEx();
             this.UpdateList = new System.Windows.Forms.ListBox();
             this.dataGridViewProgressColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.VerList = new ControlEx.ComboBoxEx();
-            this.UpdateJsonURL = new ControlEx.TextBoxEx();
             this.StartPanel.SuspendLayout();
             this.SetPanel.SuspendLayout();
             this.SystemSet.SuspendLayout();
@@ -176,6 +176,19 @@
             this.GameStart.Text = "启动游戏";
             this.GameStart.UseVisualStyleBackColor = true;
             this.GameStart.Click += new System.EventHandler(this.GameStart_Click);
+            // 
+            // VerList
+            // 
+            this.VerList.CausesValidation = false;
+            this.VerList.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.VerList.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            this.VerList.FormattingEnabled = true;
+            this.VerList.Location = new System.Drawing.Point(0, 62);
+            this.VerList.Name = "VerList";
+            this.VerList.Size = new System.Drawing.Size(110, 20);
+            this.VerList.TabIndex = 7;
+            this.VerList.TabStop = false;
+            this.VerList.SelectedIndexChanged += new System.EventHandler(this.VerList_SelectedIndexChanged);
             // 
             // ConfigSet
             // 
@@ -895,6 +908,16 @@
             this.label7.TabIndex = 12;
             this.label7.Text = "UpdateURL：";
             // 
+            // UpdateJsonURL
+            // 
+            this.UpdateJsonURL.BackGroundText = "在这里填入用于整合包更新的Json，例：http://../xx.json";
+            this.UpdateJsonURL.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.UpdateJsonURL.Location = new System.Drawing.Point(169, 23);
+            this.UpdateJsonURL.Name = "UpdateJsonURL";
+            this.UpdateJsonURL.Size = new System.Drawing.Size(412, 21);
+            this.UpdateJsonURL.TabIndex = 13;
+            this.UpdateJsonURL.Leave += new System.EventHandler(this.UpdateJsonURL_Leave);
+            // 
             // UpdateList
             // 
             this.UpdateList.BackColor = System.Drawing.Color.WhiteSmoke;
@@ -913,29 +936,6 @@
             this.dataGridViewProgressColumn1.Name = "dataGridViewProgressColumn1";
             this.dataGridViewProgressColumn1.ReadOnly = true;
             this.dataGridViewProgressColumn1.Resizable = System.Windows.Forms.DataGridViewTriState.True;
-            // 
-            // VerList
-            // 
-            this.VerList.CausesValidation = false;
-            this.VerList.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.VerList.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.VerList.FormattingEnabled = true;
-            this.VerList.Location = new System.Drawing.Point(0, 62);
-            this.VerList.Name = "VerList";
-            this.VerList.Size = new System.Drawing.Size(110, 20);
-            this.VerList.TabIndex = 7;
-            this.VerList.TabStop = false;
-            this.VerList.SelectedIndexChanged += new System.EventHandler(this.VerList_SelectedIndexChanged);
-            // 
-            // UpdateJsonURL
-            // 
-            this.UpdateJsonURL.BackGroundText = "在这里填入用于整合包更新的Json，例：http://../xx.json";
-            this.UpdateJsonURL.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.UpdateJsonURL.Location = new System.Drawing.Point(169, 23);
-            this.UpdateJsonURL.Name = "UpdateJsonURL";
-            this.UpdateJsonURL.Size = new System.Drawing.Size(412, 21);
-            this.UpdateJsonURL.TabIndex = 13;
-            this.UpdateJsonURL.Leave += new System.EventHandler(this.UpdateJsonURL_Leave);
             // 
             // AMCL
             // 

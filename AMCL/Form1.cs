@@ -1,5 +1,4 @@
-﻿using JsonArchive;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,14 +7,14 @@ using System.IO;
 using System.Management;
 using System.Net;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using ZipArchive;
+using GetHash;
+using JsonArchive;
 using MineCraftLogin;
 using ProfileSet;
-using GetHash;
+using ZipArchive;
 
 namespace AMCL
 {
@@ -35,11 +34,11 @@ namespace AMCL
         String VerURLb = @"http://bmclapi.bangbang93.com/versions/";                //BMCL游戏下载地址
         String IndexsURL = @"http://s3.amazonaws.com/Minecraft.Download/indexes/";  //官方资源目录地址（index.json）
         String IndexsURLb = @"http://bmclapi.bangbang93.com/indexes/";              //BMCL资源目录地址
-        String AssetsURL = @"http://resources.download.minecraft.net/"; //官方资源库地址
-        String AssetsURLb = @"http://bmclapi.bangbang93.com/assets/";   //BMCL资源库地址
-        String LibrariesURL = @"https://libraries.minecraft.net/";      //官方运行库地址
-        String BMCLLibURL = @"http://bmclapi.bangbang93.com/libraries/";//BMCL运行库地址
-        String ForgeLibURL = @"http://central.maven.org/maven2/";       //Forge运行库备用地址
+        String AssetsURL = @"http://resources.download.minecraft.net/";             //官方资源库地址
+        String AssetsURLb = @"http://bmclapi.bangbang93.com/assets/";               //BMCL资源库地址
+        String LibrariesURL = @"https://libraries.minecraft.net/";                  //官方运行库地址
+        String BMCLLibURL = @"http://bmclapi.bangbang93.com/libraries/";            //BMCL运行库地址
+        String ForgeLibURL = @"http://central.maven.org/maven2/";                   //Forge运行库备用地址
         String GameDir = "";    //主目录（../.minecraft）
         String strRun = "";     //启动参数
         String VerName = "";    //版本名称
@@ -961,9 +960,9 @@ namespace AMCL
 
             strRun = GetRunStr();       //获取游戏启动参数(这一步已获取到资源文件版本号)
             if (UpdateAuto.Checked == true) ModUpdateLine();
-            LibCheck();                 //检查运行库是否有完整
             try
             {
+                LibCheck();                 //检查运行库是否有完整
                 AssCheck();                 //检查资源库是否有完整
             }
             catch (Exception e)
@@ -977,7 +976,7 @@ namespace AMCL
         /// </summary>
         private void LibCheck()
         {
-            String NativesPath = GameDir + @"\natives";//获取natives文件夹地址
+            String NativesPath = GameDir + @"\versions\" + VerName + @"\natives";//获取natives文件夹地址
             String JsonPath = GameDir + @"\versions\" + VerName + @"\" + VerName + ".json"; //获取JSON文件地址
             String Text = File.ReadAllText(JsonPath);
 
@@ -1198,9 +1197,9 @@ namespace AMCL
         #region 构建启动参数
         private string GetRunStr()
         {
-            String StartPath = GameFile.Text + @"\versions\" + VerName + @"\" + VerName + ".jar";//主程序地址
-            String NativesPath = GameFile.Text + @"\natives";//
-            String JsonPath = GameFile.Text + @"\versions\" + VerName + @"\" + VerName + ".json"; //获取JSON文件地址
+            String StartPath = GameDir + @"\versions\" + VerName + @"\" + VerName + ".jar";//主程序地址
+            String NativesPath = GameDir + @"\versions\" + VerName + @"\natives";//获取natives文件夹地址
+            String JsonPath = GameDir + @"\versions\" + VerName + @"\" + VerName + ".json"; //获取JSON文件地址
 
             String RunStr = null;                       //定义启动参数字符串
             String LibList = null;                      //定义启动运行库字符串
@@ -1232,7 +1231,7 @@ namespace AMCL
                 String libFile = GameDir + @"\libraries\" + file;   //获取Lib的本地路径
                 LibList += libFile + ";";
             }
-            RunStr = "-Xincgc -Xmx" + JavaSolt.Value + "M ";
+            RunStr = "-Xincgc -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode -XX:-UseAdaptiveSizePolicy -Xmx" + JavaSolt.Value + "M ";
             RunStr += "-Dfml.ignoreInvalidMinecraftCertificates=true -Dfml.ignorePatchDiscrepancies=true ";
             RunStr += "-Djava.library.path=\"" + NativesPath + "\" ";
             RunStr += "-cp \"" + LibList + StartPath + "\" " + JSON["mainClass"] + " ";
@@ -1242,32 +1241,28 @@ namespace AMCL
             var Arguments = new StringBuilder(JSON["minecraftArguments"].ToString());//定义启动参数字符串
             Arguments.Replace("${auth_player_name}", userName);//用户名
             Arguments.Replace("${version_name}", VerName);          //游戏版本号
-            Arguments.Replace("${game_directory}", "\"" + GameFile.Text + @"\versions\" + VerName + "\"");
-            Arguments.Replace("${game_assets}", "\"" + GameFile.Text + "\\assets\""); //资源文件目录
-            Arguments.Replace("${assets_root}", "\"" + GameFile.Text + "\\assets\"");
+            Arguments.Replace("${game_directory}", "\"" + GameDir + @"\versions\" + VerName + "\"");
+            Arguments.Replace("${game_assets}", "\"" + GameDir + "\\assets\""); //资源文件目录
+            Arguments.Replace("${assets_root}", "\"" + GameDir + "\\assets\"");
             Arguments.Replace("${assets_index_name}", VerAssets);   //资源文件版本
             Arguments.Replace("${auth_uuid}", playerUUID);                 //
             Arguments.Replace("${auth_access_token}", accessToken);         //
             Arguments.Replace("${user_properties}", "{}");
             Arguments.Replace("${user_type}", "Legacy");
 
-            if (accessToken != "")//正版登陆加入Session参数
+            if (accessToken != "")                  //正版登陆加入Session参数
             {
                 Arguments.Replace("--version", "--session " + accessToken + " --version");
             }
-
-            if ((!Arguments.ToString().Contains("--width"))||(!Arguments.ToString().Contains("--fullscreen")))//设置游戏窗口大小
+            if (screenSize == "FullScreen")         //设置游戏窗口大小
             {
-                if (screenSize == "FullScreen")
-                {
-                    Arguments.Append(" --fullscreen");
-                }
-                else if (screenSize.Contains("*"))
-                {
-                    String[] gamesize = screenSize.Trim().Split('*');
-                    Arguments.Append(" --width " + gamesize[0].Trim());
-                    Arguments.Append(" --height " + gamesize[1].Trim());
-                }
+                Arguments.Append(" --fullscreen");
+            }
+            else if (screenSize.Contains("*"))
+            {
+                String[] gamesize = screenSize.Trim().Split('*');
+                Arguments.Append(" --width " + gamesize[0].Trim());
+                Arguments.Append(" --height " + gamesize[1].Trim());
             }
             RunStr += Arguments.ToString();
             return RunStr;
