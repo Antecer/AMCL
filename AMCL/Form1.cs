@@ -958,8 +958,8 @@ namespace AMCL
                 userName = UserName.Text;
             }
 
-            strRun = GetRunStr();       //获取游戏启动参数(这一步已获取到资源文件版本号)
             if (UpdateAuto.Checked == true) ModUpdateLine();
+            strRun = GetRunStr();           //获取游戏启动参数(这一步已获取到资源文件版本号)
             try
             {
                 LibCheck();                 //检查运行库是否有完整
@@ -1195,6 +1195,10 @@ namespace AMCL
         #endregion
 
         #region 构建启动参数
+        /// <summary>
+        /// 获取启动游戏的参数
+        /// </summary>
+        /// <returns>返回启动代码</returns>
         private string GetRunStr()
         {
             String StartPath = GameDir + @"\versions\" + VerName + @"\" + VerName + ".jar";//主程序地址
@@ -1684,6 +1688,9 @@ namespace AMCL
             Thread.Sleep(1000);
             CloseUpdateInfo();
         }
+        /// <summary>
+        /// 整合包mod更新子程序
+        /// </summary>
         private void ModUpdateLine()
         {
             String UpdateURL = UpdateJsonURL.Text;
