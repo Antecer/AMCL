@@ -999,6 +999,7 @@ namespace AMCL
                         file += "/" + temp[i];
                     }
                     file += "/" + temp[temp.Length - 2] + "-" + temp[temp.Length - 1] + ".jar";
+                    if (file.IndexOf("forge") > -1) file = file.Replace(".jar", "-universal.jar");
                 }
                 if (Item.ContainsKey("natives"))                    //获取对应系统的库文件版本
                 {
@@ -1013,7 +1014,6 @@ namespace AMCL
                 if (Item.ContainsKey("url"))                        //获取库文件的下载链接
                 {
                     strURL = Item["url"] + file;
-                    if (Item["name"].ToString().IndexOf("forge") > -1) strURL = strURL.Replace(".jar", "-universal.jar");
                 }
                 else
                 {
@@ -1225,6 +1225,7 @@ namespace AMCL
                         file += @"\" + temp[i];
                     }
                     file += @"\" + temp[temp.Length - 2] + "-" + temp[temp.Length - 1] + ".jar";
+                    if (file.IndexOf("forge") > -1) file = file.Replace(".jar", "-universal.jar");
                 }
                 if (Item.ContainsKey("extract")) continue;          //提取文件，不加入启动参数
                 if (Item.ContainsKey("rules"))
