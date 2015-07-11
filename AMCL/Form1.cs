@@ -170,6 +170,7 @@ namespace AMCL
             AssetPanel.BackColor = Color.FromArgb(0, 200, 200, 200);//资源面板背景色
             if (ReadIni("背景设置", "BK[640x360]") != "")
             {
+                if (File.Exists(ReadIni("背景设置", "BK[640x360]")) == false) return;
                 this.BackgroundImage = Image.FromFile(ReadIni("背景设置", "BK[640x360]"));
             }
             else
