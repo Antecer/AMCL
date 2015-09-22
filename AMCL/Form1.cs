@@ -1,4 +1,8 @@
-﻿using System;
+﻿using GetHash;
+using JsonArchive;
+using MineCraftLogin;
+using ProfileSet;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,12 +12,9 @@ using System.Management;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-using GetHash;
-using JsonArchive;
-using MineCraftLogin;
-using ProfileSet;
 using ZipArchive;
 
 namespace AMCL
@@ -1698,6 +1699,11 @@ namespace AMCL
             String UpdateURL = UpdateJsonURL.Text;
             String Text = GetHttpPage(UpdateURL);
             InfoAdd(false, "正在检查更新当前整合包\n", Color.ForestGreen);
+
+            if ((Text.StartsWith("\"") && Text.EndsWith("\"")))//应对OSChina的临时应急方案
+            {
+                Text = Regex.Unescape(Text.Trim('\"'));
+            }
             if (!(Text.StartsWith("{") && Text.EndsWith("}")))
             {
                 InfoAdd(false, "当前整合包暂无更新\n", Color.ForestGreen);
